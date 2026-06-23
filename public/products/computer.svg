@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#111827"/>
+      <stop offset="100%" stop-color="#374151"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" rx="40" fill="url(#bg)"/>
+  <circle cx="640" cy="140" r="110" fill="#22c55e" opacity="0.14"/>
+  <circle cx="155" cy="470" r="120" fill="#38bdf8" opacity="0.12"/>
+  <rect x="205" y="128" width="390" height="246" rx="28" fill="url(#glass)"/>
+  <rect x="232" y="152" width="336" height="190" rx="16" fill="#111827"/>
+  <rect x="354" y="378" width="92" height="18" rx="9" fill="#94a3b8"/>
+  <rect x="300" y="398" width="200" height="24" rx="12" fill="#cbd5e1"/>
+  <path d="M280 224L400 164L520 224" fill="none" stroke="#60a5fa" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
