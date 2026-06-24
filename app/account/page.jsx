@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import SiteHeader from "../../components/SiteHeader";
 import SectionHeading from "../../components/SectionHeading";
 import { apiJson } from "../../lib/api";
@@ -45,10 +45,13 @@ export default function AccountPage() {
           alternatePhone: current.alternatePhone || "",
         });
         localStorage.setItem("sudanzonUser", JSON.stringify(current));
+        window.dispatchEvent(new Event("sudanzon-user-updated"));
       })
       .catch((error) => setMessage(error.message))
       .finally(() => setLoading(false));
   }, []);
+
+  const canAccessSeller = useMemo(() => user && ["VENDOR", "ADMIN"].includes(user.role), [user]);
 
   const onChange = (event) => {
     const { name, value } = event.target;
@@ -73,8 +76,8 @@ export default function AccountPage() {
 
       setUser(result.user);
       localStorage.setItem("sudanzonUser", JSON.stringify(result.user));
-      setMessage("تم حفظ بيانات الحساب بنجاح");
       window.dispatchEvent(new Event("sudanzon-user-updated"));
+      setMessage("تم حفظ بيانات الحساب بنجاح");
     } catch (error) {
       setMessage(error.message);
     } finally {
@@ -86,6 +89,7 @@ export default function AccountPage() {
     localStorage.removeItem("sudanzonToken");
     localStorage.removeItem("sudanzonUser");
     window.dispatchEvent(new Event("sudanzon-cart-updated"));
+    window.dispatchEvent(new Event("sudanzon-user-updated"));
     window.location.href = "/";
   };
 
@@ -199,10 +203,12 @@ export default function AccountPage() {
                   <strong>السلة</strong>
                   <span>متابعة المنتجات قبل الدفع</span>
                 </Link>
-                <Link className="accountQuickCard" href="/seller">
-                  <strong>لوحة البائع</strong>
-                  <span>للمتاجر المعتمدة فقط</span>
-                </Link>
+                {canAccessSeller ? (
+                  <Link className="accountQuickCard" href="/seller">
+                    <strong>لوحة البائع</strong>
+                    <span>للمتاجر المعتمدة فقط</span>
+                  </Link>
+                ) : null}
                 <Link className="accountQuickCard" href="/products">
                   <strong>التسوق</strong>
                   <span>استمرار في التصفح والبحث</span>

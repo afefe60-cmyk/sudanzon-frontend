@@ -163,6 +163,19 @@ select {
   line-height: 1.1;
 }
 
+.amazonLogoutAction {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  text-align: right;
+  cursor: pointer;
+  font: inherit;
+}
+
+.amazonLogoutAction strong {
+  color: #fff;
+}
+
 .amazonActionLink span {
   font-size: 0.72rem;
   color: #d6d6d6;
