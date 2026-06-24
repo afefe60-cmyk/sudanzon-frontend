@@ -43,6 +43,14 @@ export default function LoginPage({ searchParams }) {
                     <strong>طلب حساب</strong>
                   </Link>
                 </div>
+                <Link
+                  className="authSignupLink"
+                  href={`/auth/forgot-password${searchParams?.returnTo ? `?returnTo=${encodeURIComponent(searchParams.returnTo)}` : ""}`}
+                  style={{ marginTop: 14 }}
+                >
+                  <span>نسيت كلمة المرور؟</span>
+                  <strong>إعادة التعيين عبر البريد</strong>
+                </Link>
               </div>
             </div>
           </div>
