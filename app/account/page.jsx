@@ -52,6 +52,7 @@ export default function AccountPage() {
   }, []);
 
   const canAccessSeller = useMemo(() => user && ["VENDOR", "ADMIN"].includes(user.role), [user]);
+  const canAccessCourier = useMemo(() => user && ["COURIER", "ADMIN"].includes(user.role), [user]);
 
   const onChange = (event) => {
     const { name, value } = event.target;
@@ -207,6 +208,12 @@ export default function AccountPage() {
                   <Link className="accountQuickCard" href="/seller">
                     <strong>لوحة البائع</strong>
                     <span>للمتاجر المعتمدة فقط</span>
+                  </Link>
+                ) : null}
+                {canAccessCourier ? (
+                  <Link className="accountQuickCard" href="/courier">
+                    <strong>لوحة المندوب</strong>
+                    <span>تحديث وتسليم الشحنات</span>
                   </Link>
                 ) : null}
                 <Link className="accountQuickCard" href="/products">

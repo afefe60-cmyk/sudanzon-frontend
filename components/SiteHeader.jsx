@@ -11,6 +11,7 @@ const navItems = [
   { href: "/account", label: "حسابي" },
   { href: "/orders", label: "طلباتي" },
   { href: "/seller", label: "لوحة البائع", roles: ["VENDOR", "ADMIN"] },
+  { href: "/courier", label: "المندوب", roles: ["COURIER", "ADMIN"] },
   { href: "/admin", label: "لوحة الإدارة", roles: ["ADMIN"] },
 ];
 
