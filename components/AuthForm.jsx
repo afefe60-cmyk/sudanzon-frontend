@@ -31,6 +31,7 @@ export default function AuthForm({ title, subtitle, endpoint, fields, submitLabe
       if (typeof window !== "undefined") {
         localStorage.setItem("sudanzonToken", result.token);
         localStorage.setItem("sudanzonUser", JSON.stringify(result.user));
+        window.dispatchEvent(new Event("sudanzon-user-updated"));
       }
 
       setMessage(result.message || "تمت العملية بنجاح");

@@ -10,8 +10,8 @@ const navItems = [
   { href: "/cart", label: "السلة" },
   { href: "/account", label: "حسابي" },
   { href: "/orders", label: "طلباتي" },
-  { href: "/seller", label: "لوحة البائع" },
-  { href: "/admin", label: "لوحة الإدارة" },
+  { href: "/seller", label: "لوحة البائع", roles: ["VENDOR", "ADMIN"] },
+  { href: "/admin", label: "لوحة الإدارة", roles: ["ADMIN"] },
 ];
 
 const categoryItems = [
@@ -53,16 +53,16 @@ const megaMenuGroups = [
       { href: "/account", label: "الملف الشخصي", icon: "👤" },
       { href: "/orders", label: "الطلبات", icon: "📦" },
       { href: "/cart", label: "السلة", icon: "🛒" },
-      { href: "/seller", label: "لوحة البائع", icon: "🏪" },
+      { href: "/seller", label: "لوحة البائع", icon: "🏪", roles: ["VENDOR", "ADMIN"] },
     ],
   },
   {
     icon: "🏬",
     title: "ابدأ البيع",
     links: [
-      { href: "/seller", label: "إنشاء متجر", icon: "⭐" },
-      { href: "/auth/vendor", label: "طلبات البائعين", icon: "➕" },
-      { href: "/admin", label: "إدارة المنصة", icon: "⚙️" },
+      { href: "/seller", label: "إنشاء متجر", icon: "⭐", roles: ["VENDOR", "ADMIN"] },
+      { href: "/auth/vendor", label: "طلبات البائعين", icon: "➕", roles: ["ADMIN"] },
+      { href: "/admin", label: "إدارة المنصة", icon: "⚙️", roles: ["ADMIN"] },
       { href: "/products", label: "استعراض المتاجر", icon: "✅" },
     ],
   },
@@ -71,8 +71,25 @@ const megaMenuGroups = [
 export default function SiteHeader() {
   const [cartCount, setCartCount] = useState(0);
   const [megaOpen, setMegaOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [currentRole, setCurrentRole] = useState(null);
 
-  const megaSummary = useMemo(() => megaMenuGroups.flatMap((group) => group.links).slice(0, 6), []);
+  const canSeeItem = (item) => !item.roles || (currentRole && item.roles.includes(currentRole));
+  const visibleNavItems = useMemo(() => navItems.filter(canSeeItem), [currentRole]);
+  const visibleMegaMenuGroups = useMemo(
+    () =>
+      megaMenuGroups
+        .map((group) => ({
+          ...group,
+          links: group.links.filter(canSeeItem),
+        }))
+        .filter((group) => group.links.length > 0),
+    [currentRole]
+  );
+  const megaSummary = useMemo(
+    () => visibleMegaMenuGroups.flatMap((group) => group.links).slice(0, 6),
+    [visibleMegaMenuGroups]
+  );
 
   useEffect(() => {
     const syncCart = () => {
@@ -80,13 +97,31 @@ export default function SiteHeader() {
       setCartCount(items.reduce((sum, item) => sum + Number(item.quantity || 0), 0));
     };
 
+    const syncRole = () => {
+      try {
+        const stored = window.localStorage.getItem("sudanzonUser");
+        const parsed = stored ? JSON.parse(stored) : null;
+        setCurrentUser(parsed);
+        setCurrentRole(parsed?.role || null);
+      } catch {
+        setCurrentUser(null);
+        setCurrentRole(null);
+      }
+    };
+
     syncCart();
+    syncRole();
+
     window.addEventListener("storage", syncCart);
+    window.addEventListener("storage", syncRole);
     window.addEventListener("sudanzon-cart-updated", syncCart);
+    window.addEventListener("sudanzon-user-updated", syncRole);
 
     return () => {
       window.removeEventListener("storage", syncCart);
+      window.removeEventListener("storage", syncRole);
       window.removeEventListener("sudanzon-cart-updated", syncCart);
+      window.removeEventListener("sudanzon-user-updated", syncRole);
     };
   }, []);
 
@@ -123,14 +158,39 @@ export default function SiteHeader() {
           </form>
 
           <div className="amazonActions">
-            <Link className="amazonActionLink" href="/auth/login">
-              <span>مرحبًا</span>
-              <strong>دخول</strong>
-            </Link>
+            {currentUser ? (
+              <Link className="amazonActionLink" href="/account">
+                <span>مرحبًا</span>
+                <strong>{currentUser.name || "مستخدم"}</strong>
+              </Link>
+            ) : (
+              <Link className="amazonActionLink" href="/auth/login">
+                <span>مرحبًا</span>
+                <strong>دخول</strong>
+              </Link>
+            )}
             <Link className="amazonActionLink" href="/orders">
               <span>الطلبات</span>
               <strong>متابعة</strong>
             </Link>
+            {currentUser ? (
+              <button
+                type="button"
+                className="amazonActionLink amazonLogoutAction"
+                onClick={() => {
+                  window.localStorage.removeItem("sudanzonToken");
+                  window.localStorage.removeItem("sudanzonUser");
+                  setCurrentUser(null);
+                  setCurrentRole(null);
+                  window.dispatchEvent(new Event("sudanzon-user-updated"));
+                  window.dispatchEvent(new Event("sudanzon-cart-updated"));
+                  window.location.href = "/";
+                }}
+              >
+                <span>الحساب</span>
+                <strong>تسجيل خروج</strong>
+              </button>
+            ) : null}
             <Link className="amazonCart" href="/cart">
               السلة
               <span className="amazonCartBadge">{cartCount}</span>
@@ -150,11 +210,13 @@ export default function SiteHeader() {
               aria-controls="sudanzon-mega-menu"
               aria-label="فتح قائمة الأقسام"
             >
-              <span className="amazonMegaButtonIcon" aria-hidden="true">☰</span>
+              <span className="amazonMegaButtonIcon" aria-hidden="true">
+                ☰
+              </span>
             </button>
 
             <nav className="amazonNavLinks" aria-label="التنقل الرئيسي">
-              {navItems.map((item) => (
+              {visibleNavItems.map((item) => (
                 <Link key={item.href} href={item.href} className="amazonNavLink">
                   {item.label}
                 </Link>
@@ -163,7 +225,7 @@ export default function SiteHeader() {
           </div>
 
           <div className={`amazonMegaMenu ${megaOpen ? "is-open" : ""}`} id="sudanzon-mega-menu">
-            {megaMenuGroups.map((group) => (
+            {visibleMegaMenuGroups.map((group) => (
               <div className="amazonMegaCol" key={group.title}>
                 <div className="amazonMegaColHeader">
                   <span className="amazonMegaColIcon" aria-hidden="true">
