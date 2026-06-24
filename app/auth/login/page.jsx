@@ -33,6 +33,13 @@ export default function LoginPage({ searchParams }) {
               />
 
               <div className="authSignupLinks">
+                <Link className="authSignupLink" href="/auth/forgot-password">
+                  <span>نسيت كلمة المرور؟</span>
+                  <strong>إعادة تعيين عبر البريد</strong>
+                </Link>
+              </div>
+
+              <div className="authSignupLinks">
                 <div className="authSignupLinkGrid">
                   <Link className="authSignupLink" href="/auth/customer">
                     <span>حساب عميل</span>

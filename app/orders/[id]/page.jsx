@@ -10,6 +10,8 @@ import { getProductImage } from "../../../lib/media";
 
 const statusSteps = ["جديد", "قيد المعالجة", "تم الشحن", "وصل للمندوب", "تم التسليم", "ملغي"];
 const shipmentSteps = ["تم الاستلام", "في الطريق", "تم التسليم"];
+const orderStatusOptions = ["جديد", "قيد المعالجة", "تم الشحن", "وصل للمندوب", "تم التسليم", "ملغي"];
+const shipmentStatusOptions = ["تم الاستلام", "في الطريق", "تم التسليم"];
 
 function getStepIndex(list, status) {
   const index = list.indexOf(status);
@@ -58,12 +60,23 @@ export default function OrderDetailPage() {
   const orderId = params?.id;
   const [order, setOrder] = useState(null);
   const [message, setMessage] = useState("جاري تحميل تفاصيل الطلب...");
+  const [currentRole, setCurrentRole] = useState(null);
+  const [selectedOrderStatus, setSelectedOrderStatus] = useState("");
+  const [selectedShipmentStatus, setSelectedShipmentStatus] = useState("");
 
   useEffect(() => {
     const token = localStorage.getItem("sudanzonToken");
     if (!token) {
       window.location.replace(`/auth/login?returnTo=/orders/${orderId}`);
       return;
+    }
+
+    try {
+      const storedUser = localStorage.getItem("sudanzonUser");
+      const parsedUser = storedUser ? JSON.parse(storedUser) : null;
+      setCurrentRole(parsedUser?.role || null);
+    } catch {
+      setCurrentRole(null);
     }
 
     if (!orderId) {
@@ -78,10 +91,67 @@ export default function OrderDetailPage() {
     })
       .then((result) => {
         setOrder(result.item || null);
+        setSelectedOrderStatus(result.item?.status || "");
+        setSelectedShipmentStatus(result.item?.shipment?.status || "");
         setMessage("");
       })
       .catch((error) => setMessage(error.message));
   }, [orderId]);
+
+  const canEditOrderStatus = currentRole === "ADMIN" || currentRole === "VENDOR";
+  const canEditShipmentStatus = currentRole === "ADMIN" || currentRole === "COURIER";
+
+  const submitOrderStatus = async () => {
+    const token = localStorage.getItem("sudanzonToken");
+    if (!token || !selectedOrderStatus) {
+      return;
+    }
+
+    try {
+      const result = await apiJson(`/api/orders/${orderId}/status`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: selectedOrderStatus }),
+      });
+      setMessage(result.message || "تم تحديث الحالة");
+      const refreshed = await apiJson(`/api/orders/${orderId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setOrder(refreshed.item || null);
+      setSelectedOrderStatus(refreshed.item?.status || "");
+      setSelectedShipmentStatus(refreshed.item?.shipment?.status || "");
+    } catch (error) {
+      setMessage(error.message);
+    }
+  };
+
+  const submitShipmentStatus = async (status) => {
+    const token = localStorage.getItem("sudanzonToken");
+    if (!token || !status) {
+      return;
+    }
+
+    try {
+      const result = await apiJson(`/api/orders/${orderId}/shipment-status`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status }),
+      });
+      setMessage(result.message || "تم تحديث حالة الشحنة");
+      const refreshed = await apiJson(`/api/orders/${orderId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setOrder(refreshed.item || null);
+      setSelectedOrderStatus(refreshed.item?.status || "");
+      setSelectedShipmentStatus(refreshed.item?.shipment?.status || "");
+    } catch (error) {
+      setMessage(error.message);
+    }
+  };
 
   const orderStatusIndex = useMemo(() => getStepIndex(statusSteps, order?.status), [order]);
   const shipmentStatusIndex = useMemo(
@@ -169,6 +239,51 @@ export default function OrderDetailPage() {
                       </div>
                     ))}
                   </div>
+
+                  {canEditOrderStatus || canEditShipmentStatus ? (
+                    <div className="orderAdminControls" style={{ marginTop: 18 }}>
+                      {canEditOrderStatus ? (
+                        <label>
+                          تغيير حالة الطلب
+                          <select
+                            className="input"
+                            value={selectedOrderStatus}
+                            onChange={(event) => setSelectedOrderStatus(event.target.value)}
+                          >
+                            {orderStatusOptions.map((status) => (
+                              <option key={status} value={status}>
+                                {status}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      ) : null}
+
+                      {canEditShipmentStatus ? (
+                        <div style={{ display: "grid", gap: 10 }}>
+                          <strong style={{ display: "block", marginBottom: 4 }}>حالة الشحنة للمندوب</strong>
+                          <div className="orderAdminActions" style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                            {shipmentStatusOptions.map((status) => (
+                              <button
+                                key={status}
+                                type="button"
+                                className={`secondaryBtn ${selectedShipmentStatus === status ? "is-active" : ""}`}
+                                onClick={() => submitShipmentStatus(status)}
+                              >
+                                {status}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+
+                      {canEditOrderStatus ? (
+                        <button className="primaryBtn" type="button" onClick={submitOrderStatus}>
+                          حفظ حالة الطلب
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="cardPanel orderItemsCard">
