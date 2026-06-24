@@ -2,9 +2,9 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import SiteHeader from "../../../../components/SiteHeader";
-import SectionHeading from "../../../../components/SectionHeading";
-import { apiJson } from "../../../../lib/api";
+import SiteHeader from "../../../components/SiteHeader";
+import SectionHeading from "../../../components/SectionHeading";
+import { apiJson } from "../../../lib/api";
 
 export default function ForgotPasswordPage({ searchParams }) {
   const [email, setEmail] = useState("");
