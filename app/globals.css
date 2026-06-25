@@ -156,6 +156,10 @@ select {
   align-items: center;
 }
 
+.amazonNotificationsWrap {
+  position: relative;
+}
+
 .amazonActionLink,
 .amazonCart {
   color: var(--amazon-white);
@@ -207,6 +211,115 @@ select {
   color: #111;
   font-size: 0.75rem;
   font-weight: 800;
+}
+
+.amazonNotificationButton {
+  position: relative;
+  cursor: pointer;
+  text-align: right;
+  font: inherit;
+  border: 0;
+  background: transparent;
+}
+
+.amazonNotificationBadge {
+  position: absolute;
+  top: -8px;
+  inset-inline-end: -8px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #ff6b6b;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 18px rgba(255, 107, 107, 0.35);
+}
+
+.amazonNotificationMenu {
+  position: absolute;
+  top: calc(100% + 10px);
+  inset-inline-end: 0;
+  width: min(360px, calc(100vw - 24px));
+  background: #fff;
+  color: var(--amazon-text);
+  border-radius: 18px;
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  box-shadow: 0 20px 44px rgba(17, 17, 17, 0.18);
+  z-index: 90;
+  overflow: hidden;
+}
+
+.amazonNotificationMenuHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  background: linear-gradient(180deg, #f7fafb, #ffffff);
+  border-bottom: 1px solid rgba(17, 17, 17, 0.08);
+}
+
+.amazonNotificationMenuHeader strong {
+  color: var(--amazon-text);
+}
+
+.amazonNotificationMenuHeader button {
+  border: 0;
+  background: transparent;
+  color: #125a43;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.amazonNotificationList {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  max-height: 360px;
+  overflow: auto;
+}
+
+.amazonNotificationItem {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  background: #fff;
+  color: var(--amazon-text);
+}
+
+.amazonNotificationItem.is-unread {
+  border-color: rgba(18, 90, 67, 0.22);
+  background: linear-gradient(180deg, rgba(18, 90, 67, 0.06), rgba(255, 255, 255, 1));
+}
+
+.amazonNotificationItem strong {
+  font-size: 0.95rem;
+  color: #125a43;
+}
+
+.amazonNotificationItem span {
+  font-size: 0.88rem;
+  line-height: 1.7;
+  color: var(--amazon-text);
+}
+
+.amazonNotificationItem small {
+  color: var(--amazon-muted);
+}
+
+.amazonNotificationEmpty {
+  margin: 0;
+  padding: 16px 10px;
+  text-align: center;
+  color: var(--amazon-muted);
 }
 
 .amazonSubnav {
@@ -3765,6 +3878,15 @@ select {
     padding: 8px 10px;
     border-radius: 12px;
     background: rgba(255, 255, 255, 0.04);
+  }
+
+  .amazonNotificationMenu {
+    position: fixed;
+    inset-inline: 12px;
+    top: 118px;
+    width: auto;
+    max-width: none;
+    max-height: calc(100vh - 136px);
   }
 
   .amazonSubnavInner {

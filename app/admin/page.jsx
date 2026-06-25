@@ -5,6 +5,7 @@ import SectionHeading from "../../components/SectionHeading";
 import ProtectedPanel from "../../components/ProtectedPanel";
 import AdminOrdersClient from "../../components/AdminOrdersClient";
 import AdminUsersClient from "../../components/AdminUsersClient";
+import AdminCategoriesClient from "../../components/AdminCategoriesClient";
 import RoleGate from "../../components/RoleGate";
 
 const adminItems = [
@@ -134,6 +135,8 @@ export default function AdminPage() {
                 </div>
               ))}
             </div>
+
+            <AdminCategoriesClient />
 
             <AdminUsersClient />
 

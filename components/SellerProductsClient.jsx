@@ -11,6 +11,7 @@ const emptyForm = {
   image: "",
   price: "",
   stock: "",
+  categoryId: "",
   categoryName: "",
 };
 
@@ -21,6 +22,7 @@ export default function SellerProductsClient() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [imagePreview, setImagePreview] = useState("");
+  const [categories, setCategories] = useState([]);
 
   const getToken = () => (typeof window === "undefined" ? "" : localStorage.getItem("sudanzonToken") || "");
 
@@ -39,8 +41,26 @@ export default function SellerProductsClient() {
     }
   };
 
+  const loadCategories = async () => {
+    try {
+      const result = await apiJson("/api/products/categories");
+      const items = result.items || [];
+      setCategories(items);
+      setForm((current) => {
+        if (current.categoryId || items.length === 0) {
+          return current;
+        }
+
+        return { ...current, categoryId: items[0].id, categoryName: items[0].name };
+      });
+    } catch (error) {
+      setMessage(error.message);
+    }
+  };
+
   useEffect(() => {
     loadProducts();
+    loadCategories();
   }, []);
 
   const onChange = (event) => {
@@ -81,6 +101,7 @@ export default function SellerProductsClient() {
       image: form.image,
       price: Number(form.price),
       stock: Number(form.stock || 0),
+      categoryId: form.categoryId,
       categoryName: form.categoryName.trim(),
     };
 
@@ -112,9 +133,10 @@ export default function SellerProductsClient() {
       image: product.image || "",
       price: String(product.price ?? ""),
       stock: String(product.stock ?? ""),
+      categoryId: product.category?.id || "",
       categoryName: product.category?.name || product.category || "",
     });
-    setImagePreview(product.image || "");
+    setImagePreview(getProductImage(product));
   };
 
   const removeProduct = async (productId) => {
@@ -165,7 +187,27 @@ export default function SellerProductsClient() {
           <input className="input" name="price" value={form.price} onChange={onChange} placeholder="السعر" type="number" required />
           <input className="input" name="stock" value={form.stock} onChange={onChange} placeholder="المخزون" type="number" />
         </div>
-        <input className="input" name="categoryName" value={form.categoryName} onChange={onChange} placeholder="التصنيف" required />
+        <select
+          className="input"
+          name="categoryId"
+          value={form.categoryId}
+          onChange={(event) => {
+            const category = categories.find((item) => item.id === event.target.value);
+            setForm((current) => ({
+              ...current,
+              categoryId: event.target.value,
+              categoryName: category?.name || "",
+            }));
+          }}
+          required
+        >
+          <option value="">اختر التصنيف</option>
+          {categories.map((category) => (
+            <option key={category.id} value={category.id}>
+              {category.name}
+            </option>
+          ))}
+        </select>
         <div className="formRow">
           <button className="primaryBtn" type="submit" disabled={saving}>
             {saving ? "جاري الحفظ..." : form.id ? "حفظ التعديل" : "إضافة"}
