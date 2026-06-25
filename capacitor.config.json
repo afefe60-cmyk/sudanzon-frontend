@@ -1,0 +1,13 @@
+{
+  "appId": "com.sudanzon.market",
+  "appName": "SudanZon",
+  "webDir": ".next",
+  "server": {
+    "url": "https://demo.sudanzon.com",
+    "cleartext": false
+  },
+  "android": {
+    "allowMixedContent": false,
+    "captureInput": true
+  }
+}
