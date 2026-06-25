@@ -14,6 +14,15 @@ export default function LoginPage({ searchParams }) {
 
           <div className="authLoginCenter">
             <div className="authStack authLoginPanel">
+              {searchParams?.notice === "vendor-pending" ? (
+                <div className="cardPanel" style={{ borderColor: "#f0c14b" }}>
+                  <strong>تم إرسال طلب التاجر</strong>
+                  <p style={{ margin: "8px 0 0", color: "var(--amazon-muted)" }}>
+                    حسابك الآن بانتظار موافقة الإدارة. بعد الاعتماد يمكنك تسجيل الدخول إلى لوحة البائع.
+                  </p>
+                </div>
+              ) : null}
+
               <GoogleAuthButton returnTo={searchParams?.returnTo || "/"} />
 
               <div className="authDivider">

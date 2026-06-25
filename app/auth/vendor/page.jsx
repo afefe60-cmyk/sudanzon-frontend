@@ -17,7 +17,7 @@ export default function VendorRegisterPage({ searchParams }) {
                 subtitle=""
                 endpoint="/api/auth/register/vendor"
                 submitLabel="إرسال الطلب"
-                returnTo=""
+                returnTo="/auth/login?notice=vendor-pending"
                 fields={[
                   { name: "name", placeholder: "اسم المسؤول" },
                   { name: "storeName", placeholder: "اسم المتجر" },
