@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiJson } from "../lib/api";
+import { apiForm, apiJson } from "../lib/api";
 import { getProductImage } from "../lib/media";
 
 const emptyForm = {
@@ -23,6 +23,7 @@ export default function SellerProductsClient() {
   const [saving, setSaving] = useState(false);
   const [imagePreview, setImagePreview] = useState("");
   const [categories, setCategories] = useState([]);
+  const [productImageFile, setProductImageFile] = useState(null);
 
   const getToken = () => (typeof window === "undefined" ? "" : localStorage.getItem("sudanzonToken") || "");
 
@@ -73,21 +74,23 @@ export default function SellerProductsClient() {
     if (!file) {
       setForm((current) => ({ ...current, image: "" }));
       setImagePreview("");
+      setProductImageFile(null);
       return;
     }
 
     const reader = new FileReader();
     reader.onload = () => {
       const result = typeof reader.result === "string" ? reader.result : "";
-      setForm((current) => ({ ...current, image: result }));
       setImagePreview(result);
     };
+    setProductImageFile(file);
     reader.readAsDataURL(file);
   };
 
   const resetForm = () => {
     setForm(emptyForm);
     setImagePreview("");
+    setProductImageFile(null);
   };
 
   const submitForm = async (event) => {
@@ -95,23 +98,26 @@ export default function SellerProductsClient() {
     setSaving(true);
     setMessage("");
 
-    const payload = {
-      name: form.name.trim(),
-      description: form.description.trim(),
-      image: form.image,
-      price: Number(form.price),
-      stock: Number(form.stock || 0),
-      categoryId: form.categoryId,
-      categoryName: form.categoryName.trim(),
-    };
+    const payload = new FormData();
+    payload.append("name", form.name.trim());
+    payload.append("description", form.description.trim());
+    payload.append("price", String(Number(form.price)));
+    payload.append("stock", String(Number(form.stock || 0)));
+    payload.append("categoryId", form.categoryId);
+    payload.append("categoryName", form.categoryName.trim());
+
+    if (productImageFile) {
+      payload.append("imageFile", productImageFile);
+    } else if (form.image) {
+      payload.append("image", form.image);
+    }
 
     try {
-      await apiJson(form.id ? `/api/products/${form.id}` : "/api/products", {
+      await apiForm(form.id ? `/api/products/${form.id}` : "/api/products", payload, {
         method: form.id ? "PUT" : "POST",
         headers: {
           Authorization: `Bearer ${getToken()}`,
         },
-        body: JSON.stringify(payload),
       });
 
       setMessage(form.id ? "تم تحديث المنتج" : "تم إضافة المنتج");
