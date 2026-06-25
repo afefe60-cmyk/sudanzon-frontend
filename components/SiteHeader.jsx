@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { apiJson } from "../lib/api";
 import { readCart } from "../lib/cart";
 
 const navItems = [
@@ -11,7 +12,6 @@ const navItems = [
   { href: "/account", label: "حسابي" },
   { href: "/orders", label: "طلباتي" },
   { href: "/seller", label: "لوحة البائع", roles: ["VENDOR", "ADMIN"] },
-  { href: "/courier", label: "المندوب", roles: ["COURIER", "ADMIN"] },
   { href: "/admin", label: "لوحة الإدارة", roles: ["ADMIN"] },
 ];
 
@@ -74,8 +74,13 @@ export default function SiteHeader() {
   const [megaOpen, setMegaOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [currentRole, setCurrentRole] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
 
   const canSeeItem = (item) => !item.roles || (currentRole && item.roles.includes(currentRole));
+  const canSeeNotifications = Boolean(currentUser && ["ADMIN", "VENDOR"].includes(currentRole));
   const visibleNavItems = useMemo(() => navItems.filter(canSeeItem), [currentRole]);
   const visibleMegaMenuGroups = useMemo(
     () =>
@@ -91,6 +96,77 @@ export default function SiteHeader() {
     () => visibleMegaMenuGroups.flatMap((group) => group.links).slice(0, 6),
     [visibleMegaMenuGroups]
   );
+
+  const loadNotifications = useCallback(async () => {
+    if (!canSeeNotifications) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
+
+    const token = window.localStorage.getItem("sudanzonToken");
+    if (!token) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
+
+    setNotificationsLoading(true);
+    try {
+      const result = await apiJson("/api/notifications?limit=6", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setNotifications(result.items || []);
+      setUnreadCount(Number(result.unreadCount || 0));
+    } catch {
+      setNotifications([]);
+      setUnreadCount(0);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  }, [canSeeNotifications]);
+
+  const markNotificationRead = async (notificationId) => {
+    const token = window.localStorage.getItem("sudanzonToken");
+    if (!token || !notificationId) {
+      return;
+    }
+
+    try {
+      await apiJson(`/api/notifications/${notificationId}/read`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+    } catch {
+      // Keep the UI responsive even if the request fails.
+    } finally {
+      window.dispatchEvent(new Event("sudanzon-notifications-updated"));
+    }
+  };
+
+  const markAllNotificationsRead = async () => {
+    const token = window.localStorage.getItem("sudanzonToken");
+    if (!token) {
+      return;
+    }
+
+    try {
+      await apiJson("/api/notifications/read-all", {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      window.dispatchEvent(new Event("sudanzon-notifications-updated"));
+    } catch {
+      // ignore
+    }
+  };
 
   useEffect(() => {
     const syncCart = () => {
@@ -117,14 +193,34 @@ export default function SiteHeader() {
     window.addEventListener("storage", syncRole);
     window.addEventListener("sudanzon-cart-updated", syncCart);
     window.addEventListener("sudanzon-user-updated", syncRole);
+    window.addEventListener("sudanzon-notifications-updated", loadNotifications);
+    window.addEventListener("focus", loadNotifications);
 
     return () => {
       window.removeEventListener("storage", syncCart);
       window.removeEventListener("storage", syncRole);
       window.removeEventListener("sudanzon-cart-updated", syncCart);
       window.removeEventListener("sudanzon-user-updated", syncRole);
+      window.removeEventListener("sudanzon-notifications-updated", loadNotifications);
+      window.removeEventListener("focus", loadNotifications);
     };
-  }, []);
+  }, [loadNotifications]);
+
+  useEffect(() => {
+    if (!canSeeNotifications) {
+      return undefined;
+    }
+
+    loadNotifications();
+
+    const interval = window.setInterval(() => {
+      loadNotifications();
+    }, 30000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [canSeeNotifications, loadNotifications]);
 
   return (
     <header className="siteHeader amazonHeader">
@@ -174,6 +270,61 @@ export default function SiteHeader() {
               <span>الطلبات</span>
               <strong>متابعة</strong>
             </Link>
+            {canSeeNotifications ? (
+              <div className="amazonNotificationsWrap">
+                <button
+                  type="button"
+                  className="amazonActionLink amazonNotificationButton"
+                  onClick={() => setNotificationsOpen((value) => !value)}
+                  aria-expanded={notificationsOpen}
+                  aria-label="الإشعارات"
+                >
+                  <span>الإشعارات</span>
+                  <strong>تنبيهات</strong>
+                  {unreadCount > 0 ? <span className="amazonNotificationBadge">{unreadCount}</span> : null}
+                </button>
+
+                {notificationsOpen ? (
+                  <div className="amazonNotificationMenu">
+                    <div className="amazonNotificationMenuHeader">
+                      <strong>الإشعارات</strong>
+                      <button type="button" onClick={markAllNotificationsRead}>
+                        تعيين الكل كمقروء
+                      </button>
+                    </div>
+
+                    <div className="amazonNotificationList">
+                      {notificationsLoading ? (
+                        <p className="amazonNotificationEmpty">جارِ تحميل الإشعارات...</p>
+                      ) : notifications.length ? (
+                        notifications.map((item) => (
+                          <Link
+                            key={item.id}
+                            href={item.payload?.orderUrl || item.payload?.reviewUrl || "/account"}
+                            className={`amazonNotificationItem ${item.readAt ? "" : "is-unread"}`}
+                            onClick={() => {
+                              markNotificationRead(item.id);
+                              setNotificationsOpen(false);
+                            }}
+                          >
+                            <strong>{item.title}</strong>
+                            <span>{item.message}</span>
+                            <small>
+                              {new Date(item.createdAt).toLocaleString("ar-SD", {
+                                dateStyle: "medium",
+                                timeStyle: "short",
+                              })}
+                            </small>
+                          </Link>
+                        ))
+                      ) : (
+                        <p className="amazonNotificationEmpty">لا توجد إشعارات جديدة.</p>
+                      )}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
             {currentUser ? (
               <button
                 type="button"
@@ -183,6 +334,9 @@ export default function SiteHeader() {
                   window.localStorage.removeItem("sudanzonUser");
                   setCurrentUser(null);
                   setCurrentRole(null);
+                  setNotifications([]);
+                  setUnreadCount(0);
+                  setNotificationsOpen(false);
                   window.dispatchEvent(new Event("sudanzon-user-updated"));
                   window.dispatchEvent(new Event("sudanzon-cart-updated"));
                   window.location.href = "/";
