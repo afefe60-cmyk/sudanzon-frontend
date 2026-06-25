@@ -14,6 +14,15 @@ export default function LoginPage({ searchParams }) {
 
           <div className="authLoginCenter">
             <div className="authStack authLoginPanel">
+              {searchParams?.notice === "vendor-pending" ? (
+                <div className="cardPanel" style={{ borderColor: "#f0c14b" }}>
+                  <strong>تم إرسال طلب التاجر</strong>
+                  <p style={{ margin: "8px 0 0", color: "var(--amazon-muted)" }}>
+                    حسابك الآن بانتظار موافقة الإدارة. بعد الاعتماد يمكنك تسجيل الدخول إلى لوحة البائع.
+                  </p>
+                </div>
+              ) : null}
+
               <GoogleAuthButton returnTo={searchParams?.returnTo || "/"} />
 
               <div className="authDivider">
@@ -33,6 +42,13 @@ export default function LoginPage({ searchParams }) {
               />
 
               <div className="authSignupLinks">
+                <Link className="authSignupLink" href="/auth/forgot-password">
+                  <span>نسيت كلمة المرور؟</span>
+                  <strong>إعادة تعيين عبر البريد</strong>
+                </Link>
+              </div>
+
+              <div className="authSignupLinks">
                 <div className="authSignupLinkGrid">
                   <Link className="authSignupLink" href="/auth/customer">
                     <span>حساب عميل</span>
@@ -43,14 +59,6 @@ export default function LoginPage({ searchParams }) {
                     <strong>طلب حساب</strong>
                   </Link>
                 </div>
-                <Link
-                  className="authSignupLink"
-                  href={`/auth/forgot-password${searchParams?.returnTo ? `?returnTo=${encodeURIComponent(searchParams.returnTo)}` : ""}`}
-                  style={{ marginTop: 14 }}
-                >
-                  <span>نسيت كلمة المرور؟</span>
-                  <strong>إعادة التعيين عبر البريد</strong>
-                </Link>
               </div>
             </div>
           </div>

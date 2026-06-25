@@ -92,6 +92,25 @@ export default function AdminUsersClient() {
     }
   };
 
+  const approveVendor = async (user) => {
+    if (!user.vendor || user.vendor.approved) {
+      return;
+    }
+
+    setMessage("");
+    try {
+      await apiJson(`/api/admin/users/${user.id}/approve-vendor`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setMessage("تم اعتماد حساب التاجر بنجاح");
+      await loadUsers();
+      window.dispatchEvent(new Event("sudanzon-notifications-updated"));
+    } catch (error) {
+      setMessage(error.message);
+    }
+  };
+
   const showVendorFields = form.role === "VENDOR";
 
   return (
@@ -213,6 +232,14 @@ export default function AdminUsersClient() {
                 <span className="amazonMiniTag">{user.role}</span>
                 <span className="amazonMiniTag">{user.authProvider}</span>
                 {user.vendor ? <span className="amazonMiniTag">{user.vendor.storeName}</span> : null}
+                {user.vendor ? (
+                  <span className="amazonMiniTag">{user.vendor.approved ? "معتمد" : "بانتظار الموافقة"}</span>
+                ) : null}
+                {user.vendor && !user.vendor.approved ? (
+                  <button className="primaryBtn" type="button" onClick={() => approveVendor(user)}>
+                    اعتماد التاجر
+                  </button>
+                ) : null}
               </div>
             </div>
           ))}
