@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { apiForm, apiJson } from "../lib/api";
-import { getProductImage } from "../lib/media";
+import { getProductImage, getProductImages } from "../lib/media";
 
 const emptyForm = {
   id: "",
   name: "",
   description: "",
   image: "",
+  images: [],
   price: "",
   stock: "",
   categoryId: "",
@@ -21,9 +22,9 @@ export default function SellerProductsClient() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [imagePreview, setImagePreview] = useState("");
+  const [imagePreviews, setImagePreviews] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [productImageFile, setProductImageFile] = useState(null);
+  const [productImageFiles, setProductImageFiles] = useState([]);
 
   const getToken = () => (typeof window === "undefined" ? "" : localStorage.getItem("sudanzonToken") || "");
 
@@ -70,27 +71,22 @@ export default function SellerProductsClient() {
   };
 
   const onImageChange = async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      setForm((current) => ({ ...current, image: "" }));
-      setImagePreview("");
-      setProductImageFile(null);
+    const files = Array.from(event.target.files || []).slice(0, 4);
+    if (files.length === 0) {
+      setForm((current) => ({ ...current, image: "", images: [] }));
+      setImagePreviews([]);
+      setProductImageFiles([]);
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = typeof reader.result === "string" ? reader.result : "";
-      setImagePreview(result);
-    };
-    setProductImageFile(file);
-    reader.readAsDataURL(file);
+    setProductImageFiles(files);
+    setImagePreviews(files.map((file) => URL.createObjectURL(file)));
   };
 
   const resetForm = () => {
     setForm(emptyForm);
-    setImagePreview("");
-    setProductImageFile(null);
+    setImagePreviews([]);
+    setProductImageFiles([]);
   };
 
   const submitForm = async (event) => {
@@ -106,10 +102,11 @@ export default function SellerProductsClient() {
     payload.append("categoryId", form.categoryId);
     payload.append("categoryName", form.categoryName.trim());
 
-    if (productImageFile) {
-      payload.append("imageFile", productImageFile);
+    if (productImageFiles.length) {
+      productImageFiles.forEach((file) => payload.append("imageFiles", file));
     } else if (form.image) {
       payload.append("image", form.image);
+      payload.append("images", JSON.stringify(form.images?.length ? form.images : [form.image]));
     }
 
     try {
@@ -137,12 +134,14 @@ export default function SellerProductsClient() {
       name: product.name || "",
       description: product.description || "",
       image: product.image || "",
+      images: Array.isArray(product.images) ? product.images : product.image ? [product.image] : [],
       price: String(product.price ?? ""),
       stock: String(product.stock ?? ""),
       categoryId: product.category?.id || "",
       categoryName: product.category?.name || product.category || "",
     });
-    setImagePreview(getProductImage(product));
+    setImagePreviews(getProductImages(product));
+    setProductImageFiles([]);
   };
 
   const removeProduct = async (productId) => {
@@ -180,12 +179,17 @@ export default function SellerProductsClient() {
         />
         <div className="sellerImageUpload">
           <label className="sellerImagePicker">
-            <span>صورة المنتج</span>
-            <input className="input" name="productImage" type="file" accept="image/*" onChange={onImageChange} />
+            <span>صور المنتج - الأولى رئيسية</span>
+            <input className="input" name="productImage" type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={onImageChange} />
           </label>
-          {imagePreview ? (
-            <div className="sellerImagePreview">
-              <img src={imagePreview} alt="معاينة المنتج" />
+          {imagePreviews.length ? (
+            <div className="sellerImagePreviewGrid">
+              {imagePreviews.map((image, index) => (
+                <div className="sellerImagePreview" key={`${image}-${index}`}>
+                  <img src={image} alt={`معاينة المنتج ${index + 1}`} />
+                  <span>{index === 0 ? "رئيسية" : `إضافية ${index}`}</span>
+                </div>
+              ))}
             </div>
           ) : null}
         </div>

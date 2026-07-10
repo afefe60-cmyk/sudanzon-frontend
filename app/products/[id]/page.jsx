@@ -3,7 +3,7 @@ import SiteHeader from "../../../components/SiteHeader";
 import SectionHeading from "../../../components/SectionHeading";
 import AddToCartButton from "../../../components/AddToCartButton";
 import { apiJson } from "../../../lib/api";
-import { getProductImage } from "../../../lib/media";
+import { getProductImage, getProductImages } from "../../../lib/media";
 import { products as fallbackProducts } from "../../../lib/mock-data";
 
 async function loadProduct(id) {
@@ -42,6 +42,7 @@ export default async function ProductPage({ params }) {
   const price = Number(product.price || 0);
   const discount = Number(product.discount || 0);
   const stock = Number(product.stock || 0);
+  const galleryImages = getProductImages(product);
 
   return (
     <main className="pageShell amazonPage">
@@ -103,12 +104,12 @@ export default async function ProductPage({ params }) {
           <div className="amazonDetailLayout productDetailLayout">
             <div className="amazonDetailGallery productGalleryPanel">
               <div className="amazonGalleryMain productMainImage">
-                <img src={getProductImage(product)} alt={product.name} />
+                <img src={galleryImages[0]} alt={product.name} />
               </div>
               <div className="amazonGalleryThumbs productThumbs">
-                {[1, 2, 3, 4].map((index) => (
-                  <span key={index}>
-                    <img src={getProductImage(product)} alt={`${product.name} ${index}`} />
+                {galleryImages.map((image, index) => (
+                  <span key={`${image}-${index}`}>
+                    <img src={image} alt={`${product.name} ${index + 1}`} />
                   </span>
                 ))}
               </div>
