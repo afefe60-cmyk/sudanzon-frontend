@@ -1,38 +1,36 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef } from "react";
 
 const categoryImages = {
-  "إلكترونيات": "/products/electronics.svg",
-  "موبايلات": "/products/phones.svg",
-  "كمبيوتر": "/products/computer.svg",
-  "عطور": "/products/perfume.svg",
-  "ملابس": "/products/fashion.svg",
-  "أحذية": "/products/shoes.svg",
-  "أدوات منزلية": "/products/home.svg",
-  "سوبر ماركت": "/products/grocery.svg",
-  "مستحضرات تجميل": "/products/beauty.svg",
-  "قطع غيار السيارات": "/products/auto.svg",
+  "إلكترونيات": "/products/electronics.jpg",
+  "موبايلات": "/products/phones.jpg",
+  "كمبيوتر": "/products/computer.jpg",
+  "عطور": "/products/perfume.jpg",
+  "ملابس": "/products/fashion.jpg",
+  "أحذية": "/products/shoes.jpg",
+  "أدوات منزلية": "/products/home.jpg",
+  "سوبر ماركت": "/products/grocery.jpg",
+  "مستحضرات تجميل": "/products/beauty.jpg",
+  "قطع غيار السيارات": "/products/auto.jpg",
 };
 
-const categoryTones = {
-  "إلكترونيات": "is-indigo",
-  "موبايلات": "is-blue",
-  "كمبيوتر": "is-slate",
-  "عطور": "is-plum",
-  "ملابس": "is-amber",
-  "أحذية": "is-emerald",
-  "أدوات منزلية": "is-teal",
-  "سوبر ماركت": "is-lime",
-  "مستحضرات تجميل": "is-pink",
-  "قطع غيار السيارات": "is-orange",
+const categoryGradients = {
+  "إلكترونيات": "linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)",
+  "موبايلات": "linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)",
+  "كمبيوتر": "linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)",
+  "عطور": "linear-gradient(135deg, #fae8ff 0%, #f5d0fe 100%)",
+  "ملابس": "linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)",
+  "أحذية": "linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)",
+  "أدوات منزلية": "linear-gradient(135deg, #ccfbf1 0%, #99f6e4 100%)",
+  "سوبر ماركت": "linear-gradient(135deg, #ecfccb 0%, #d9f99d 100%)",
+  "مستحضرات تجميل": "linear-gradient(135deg, #ffe4e6 0%, #fecdd3 100%)",
+  "قطع غيار السيارات": "linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%)",
 };
 
 export default function CategoryStrip({ categories = [], categoryIcons = {} }) {
-  const timerRef = useRef(null);
-  const [activePage, setActivePage] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
+  const scrollRef = useRef(null);
 
   const items = useMemo(() => {
     const source = categories.length > 0 ? categories : Object.keys(categoryImages);
@@ -40,99 +38,58 @@ export default function CategoryStrip({ categories = [], categoryIcons = {} }) {
     return source.map((name) => ({
       name,
       icon: categoryIcons[name] || categoryImages[name] || categoryImages["إلكترونيات"],
-      tone: categoryTones[name] || "is-default",
+      bg: categoryGradients[name] || "linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)",
     }));
   }, [categories, categoryIcons]);
 
-  const pages = useMemo(() => {
-    const grouped = [];
-    for (let index = 0; index < items.length; index += 2) {
-      grouped.push(items.slice(index, index + 2));
+  const scroll = (direction) => {
+    if (scrollRef.current) {
+      const amount = direction === "left" ? -240 : 240;
+      scrollRef.current.scrollBy({ left: amount, behavior: "smooth" });
     }
-    return grouped;
-  }, [items]);
-
-  const goToPage = (index) => {
-    if (!pages.length) return;
-    const normalized = (index + pages.length) % pages.length;
-    setActivePage(normalized);
   };
 
-  useEffect(() => {
-    if (pages.length <= 1) return undefined;
-
-    const step = () => {
-      if (isPaused) return;
-      setActivePage((current) => (current + 1) % pages.length);
-    };
-
-    timerRef.current = window.setInterval(step, 3600);
-
-    return () => {
-      if (timerRef.current) window.clearInterval(timerRef.current);
-    };
-  }, [pages.length, isPaused]);
-
   return (
-    <section className="noonCategoryStrip">
-      <div className="container noonCategoryStripInner">
-        <div className="noonCategoryDesktop" aria-label="التصنيفات">
+    <section className="szCategoryStripSection" aria-label="أقسام التسوق">
+      <div className="container szCategoryStripContainer">
+        <div className="szCategoryHeaderRow">
+          <div className="szCategoryTitleGroup">
+            <h2 className="szCategoryMainTitle">تسوق حسب التصنيف</h2>
+            <span className="szCategorySubtitle">اكتشف آلاف المنتجات عبر تصنيفاتنا المتنوعة</span>
+          </div>
+          <div className="szCategoryNavArrows">
+            <button
+              type="button"
+              onClick={() => scroll("right")}
+              className="szCatArrowBtn"
+              aria-label="التمرير لليمين"
+            >
+              ❯
+            </button>
+            <button
+              type="button"
+              onClick={() => scroll("left")}
+              className="szCatArrowBtn"
+              aria-label="التمرير لليسار"
+            >
+              ❮
+            </button>
+          </div>
+        </div>
+
+        <div className="szCategoryTrack" ref={scrollRef}>
           {items.map((item) => (
             <Link
               href={`/products?category=${encodeURIComponent(item.name)}`}
-              className={`noonCategoryTile noonCategoryTile--compact ${item.tone}`}
+              className="szCategoryCard"
               key={item.name}
             >
-              <span className="noonCategoryIcon">
-                <img src={item.icon} alt={item.name} />
-              </span>
-              <strong>{item.name}</strong>
+              <div className="szCategoryIconWrap" style={{ background: item.bg }}>
+                <img src={item.icon} alt={item.name} loading="lazy" className="szCategoryIconImg" />
+              </div>
+              <span className="szCategoryName">{item.name}</span>
             </Link>
           ))}
-        </div>
-
-        <div className="noonCategoryMobile" aria-label="التصنيفات للجوال">
-          <div
-            className="noonCategoryCarousel"
-            onMouseEnter={() => setIsPaused(true)}
-            onMouseLeave={() => setIsPaused(false)}
-            onPointerDown={() => setIsPaused(true)}
-            onPointerUp={() => setIsPaused(false)}
-            onTouchStart={() => setIsPaused(true)}
-            onTouchEnd={() => setIsPaused(false)}
-            onFocus={() => setIsPaused(true)}
-            onBlur={() => setIsPaused(false)}
-          >
-            <div className="noonCategoryCarouselPage" key={`page-${activePage}`}>
-              {(pages[activePage] || []).map((item) => (
-                <Link
-                  href={`/products?category=${encodeURIComponent(item.name)}`}
-                  className={`noonCategoryTile noonCategoryTile--compact noonCategoryTile--pair ${item.tone}`}
-                  key={item.name}
-                >
-                  <span className="noonCategoryIcon">
-                    <img src={item.icon} alt={item.name} />
-                  </span>
-                  <strong>{item.name}</strong>
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          {pages.length > 1 ? (
-            <div className="noonCategoryDots" role="tablist" aria-label="مؤشر التصنيفات">
-              {pages.map((_, index) => (
-                <button
-                  key={`dot-${index}`}
-                  type="button"
-                  className={`noonCategoryDot ${index === activePage ? "is-active" : ""}`}
-                  onClick={() => goToPage(index)}
-                  aria-label={`الانتقال إلى مجموعة التصنيفات ${index + 1}`}
-                  aria-pressed={index === activePage}
-                />
-              ))}
-            </div>
-          ) : null}
         </div>
       </div>
     </section>

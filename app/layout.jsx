@@ -1,4 +1,12 @@
+import { Tajawal } from "next/font/google";
 import "./globals.css";
+
+const tajawal = Tajawal({
+  subsets: ["arabic", "latin"],
+  weight: ["300", "400", "500", "700", "800", "900"],
+  variable: "--font-tajawal",
+  display: "swap",
+});
 
 export const metadata = {
   title: "سودان زون | سوق متعدد البائعين",
@@ -12,8 +20,8 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="ar" dir="rtl">
-      <body>{children}</body>
+    <html lang="ar" dir="rtl" className={tajawal.variable}>
+      <body className={tajawal.className}>{children}</body>
     </html>
   );
 }

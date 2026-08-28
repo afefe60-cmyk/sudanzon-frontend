@@ -1,11 +1,13 @@
+"use client";
+
 import Link from "next/link";
 import { getProductImage } from "../lib/media";
 
 const pulseMetrics = [
-  { label: "عروض مميزة", value: "18", image: "/icons/discount.svg" },
-  { label: "متاجر نشطة", value: "42", image: "/icons/store.svg" },
-  { label: "طلبات مفتوحة", value: "127", image: "/icons/product.svg" },
-  { label: "شحنات الآن", value: "31", image: "/icons/shipping.svg" },
+  { label: "عروض مميزة", value: "+250", icon: "🏷️" },
+  { label: "متاجر معتمدة", value: "+45", icon: "🏪" },
+  { label: "طلبات ناجحة", value: "+1,200", icon: "📦" },
+  { label: "تغطية المدن", value: "كل الولايات", icon: "🚚" },
 ];
 
 export default function MarketPulse({ products = [], stores = [] }) {
@@ -13,86 +15,92 @@ export default function MarketPulse({ products = [], stores = [] }) {
   const spotlightStores = stores.slice(0, 4);
 
   return (
-    <section className="marketPulseSection">
-      <div className="container">
-        <div className="marketPulseShell">
-          <div className="marketPulseHero">
-            <span className="marketPulseBadge">نبض سودان زون</span>
-            <h2>حركة السوق الآن</h2>
-            <p>
-              لوحة حيّة تجمع العروض النشطة والمتاجر البارزة والطلبات المفتوحة في واجهة واحدة واضحة، لتصل إلى أهم ما في المنصة بسرعة وبدون تشتيت.
-            </p>
+    <section className="szPulseSection" aria-label="حركة السوق المباشرة">
+      <div className="container szPulseContainer">
+        {/* Market Intro & Metrics */}
+        <div className="szPulseHero">
+          <div className="szPulseLiveTag">
+            <span className="szPulseLiveDot" />
+            <span>حركة السوق المباشرة</span>
+          </div>
+          <h2 className="szPulseTitle">نبض سودان زون اليومي</h2>
+          <p className="szPulseSubtitle">
+            متابعة فورية لأحدث المنتجات المضافة، المتاجر النشطة، والعروض الأكثر طلباً على مستوى السودان في مكان واحد.
+          </p>
 
-            <div className="marketPulseMetrics">
-              {pulseMetrics.map((metric) => (
-                <div className="marketPulseMetric" key={metric.label}>
-                  <div className="marketPulseMetricThumb">
-                    <img src={metric.image} alt={metric.label} />
-                  </div>
-                  <strong>{metric.value}</strong>
-                  <span>{metric.label}</span>
+          <div className="szPulseMetricsGrid">
+            {pulseMetrics.map((metric) => (
+              <div className="szPulseMetricCard" key={metric.label}>
+                <span className="szPulseMetricIcon">{metric.icon}</span>
+                <div className="szPulseMetricInfo">
+                  <strong className="szPulseMetricVal">{metric.value}</strong>
+                  <span className="szPulseMetricLbl">{metric.label}</span>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
+          </div>
 
-            <div className="marketPulseActions">
-              <Link className="noonHeroPrimaryBtn marketPulsePrimary" href="/products">
-                تصفح المنتجات
-              </Link>
-              <Link className="noonHeroSecondaryBtn marketPulseSecondary" href="/seller">
-                اكتشف المتاجر
-              </Link>
+          <div className="szPulseActions">
+            <Link className="szHeroBtn szHeroBtn--primary" href="/products">
+              استكشف كل المنتجات
+            </Link>
+            <Link className="szHeroBtn szHeroBtn--outline" href="/seller">
+              عرض المتاجر
+            </Link>
+          </div>
+        </div>
+
+        {/* Featured Mini Showcase */}
+        <div className="szPulseShowcase">
+          {/* Spotlight Products */}
+          <div className="szPulsePanel">
+            <div className="szPulsePanelHeader">
+              <div className="szPanelTitleWrap">
+                <span className="szPanelBadge">الأعلى طلباً</span>
+                <strong>منتجات مميزة الآن</strong>
+              </div>
+              <Link href="/products" className="szPanelLink">عرض المزيد ❯</Link>
+            </div>
+            <div className="szPulseItemsList">
+              {spotlightProducts.map((product, idx) => (
+                <Link href={`/products/${product.id}`} className="szPulseItemRow" key={product.id}>
+                  <div className="szPulseItemRank">#{idx + 1}</div>
+                  <div className="szPulseItemImgWrap">
+                    <img src={getProductImage(product)} alt={product.name} loading="lazy" />
+                  </div>
+                  <div className="szPulseItemDetails">
+                    <strong className="szPulseItemName">{product.name}</strong>
+                    <div className="szPulseItemPrice">
+                      <span>{Number(product.price).toLocaleString()}</span>
+                      <small>ج.س</small>
+                    </div>
+                  </div>
+                </Link>
+              ))}
             </div>
           </div>
 
-          <div className="marketPulseGrid">
-            <div className="marketPulsePanel marketPulsePanel--products">
-              <div className="marketPulsePanelHeader">
-                <strong>عروض مختارة</strong>
-                <span>الأقوى طلبًا اليوم</span>
+          {/* Spotlight Stores */}
+          <div className="szPulsePanel">
+            <div className="szPulsePanelHeader">
+              <div className="szPanelTitleWrap">
+                <span className="szPanelBadge szPanelBadge--store">شركاء النجاح</span>
+                <strong>متاجر رائدة بالمنصة</strong>
               </div>
-              <div className="marketPulseProductList">
-                {spotlightProducts.map((product, index) => (
-                  <Link href={`/products/${product.id}`} className="marketPulseProductCard" key={product.id}>
-                    <div className="marketPulseProductImage">
-                      <img src={getProductImage(product)} alt={product.name} />
-                    </div>
-                    <div className="marketPulseProductBody">
-                      <span>#{index + 1} في الواجهة</span>
-                      <strong>{product.name}</strong>
-                      <small>{Number(product.price).toLocaleString()} جنيه سوداني</small>
-                    </div>
-                  </Link>
-                ))}
-              </div>
+              <Link href="/seller" className="szPanelLink">تصفح الكل ❯</Link>
             </div>
-
-            <div className="marketPulsePanel marketPulsePanel--stores">
-              <div className="marketPulsePanelHeader">
-                <strong>متاجر بارزة</strong>
-                <span>متاجر جاهزة للعرض الآن</span>
-              </div>
-              <div className="marketPulseStoreList">
-                {spotlightStores.map((store) => (
-                  <div className="marketPulseStoreCard" key={store.title}>
-                    <div className="marketPulseStoreVisual">
-                      <img src={store.image} alt={store.title} />
-                    </div>
-                    <div className="marketPulseStoreCopy">
-                      <strong>{store.title}</strong>
-                      <span>{store.subtitle}</span>
-                    </div>
+            <div className="szPulseStoresGrid">
+              {spotlightStores.map((store) => (
+                <div className="szPulseStoreCard" key={store.title}>
+                  <div className="szPulseStoreIcon">
+                    <img src={store.image} alt={store.title} loading="lazy" />
                   </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="marketPulseWave" aria-hidden="true">
-              <div />
-              <div />
-              <div />
-              <div />
-              <div />
+                  <div className="szPulseStoreMeta">
+                    <strong className="szPulseStoreName">{store.title}</strong>
+                    <span className="szPulseStoreCategory">{store.subtitle}</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

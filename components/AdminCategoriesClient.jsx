@@ -3,6 +3,19 @@
 import { useEffect, useState } from "react";
 import { apiJson } from "../lib/api";
 
+const categoryIconMap = {
+  "إلكترونيات": "🔌",
+  "موبايلات": "📱",
+  "كمبيوتر": "💻",
+  "عطور": "👑",
+  "ملابس": "👕",
+  "أحذية": "👟",
+  "أدوات منزلية": "☕",
+  "سوبر ماركت": "🛒",
+  "مستحضرات تجميل": "✨",
+  "قطع غيار السيارات": "🏎️",
+};
+
 const emptyForm = {
   id: "",
   name: "",
@@ -15,6 +28,7 @@ export default function AdminCategoriesClient() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
 
   const getToken = () => (typeof window === "undefined" ? "" : localStorage.getItem("sudanzonToken") || "");
 
@@ -44,6 +58,7 @@ export default function AdminCategoriesClient() {
 
   const resetForm = () => {
     setForm(emptyForm);
+    setShowAddForm(false);
   };
 
   const submitForm = async (event) => {
@@ -65,11 +80,11 @@ export default function AdminCategoriesClient() {
         body: JSON.stringify(payload),
       });
 
-      setMessage(form.id ? "تم تحديث التصنيف" : "تمت إضافة التصنيف");
+      setMessage(form.id ? "✓ تم تحديث التصنيف بنجاح" : "✓ تمت إضافة التصنيف الجديد بنجاح");
       resetForm();
       await loadCategories();
     } catch (error) {
-      setMessage(error.message);
+      setMessage(error.message || "تعذر حفظ التصنيف");
     } finally {
       setSaving(false);
     }
@@ -81,6 +96,7 @@ export default function AdminCategoriesClient() {
       name: category.name || "",
       slug: category.slug || "",
     });
+    setShowAddForm(true);
   };
 
   const removeCategory = async (category) => {
@@ -95,71 +111,120 @@ export default function AdminCategoriesClient() {
           Authorization: `Bearer ${getToken()}`,
         },
       });
-      setMessage("تم حذف التصنيف");
+      setMessage("✓ تم حذف التصنيف");
       await loadCategories();
     } catch (error) {
-      setMessage(error.message);
+      setMessage(error.message || "تعذر حذف التصنيف");
     }
   };
 
   return (
-    <div className="cardPanel" style={{ marginTop: 24 }}>
-      <h3>إدارة التصنيفات</h3>
-      <p style={{ marginTop: 0, color: "var(--amazon-muted)" }}>
-        أضف تصنيفًا جديدًا أو عدّل اسمًا موجودًا أو احذفه بعد نقل المنتجات منه.
-      </p>
-
-      <form onSubmit={submitForm} style={{ display: "grid", gap: 12, marginBottom: 18 }}>
-        <div className="formRow">
-          <input
-            className="input"
-            name="name"
-            value={form.name}
-            onChange={onChange}
-            placeholder="اسم التصنيف"
-            required
-          />
-          <input
-            className="input"
-            name="slug"
-            value={form.slug}
-            onChange={onChange}
-            placeholder="slug اختياري"
-          />
+    <div className="szAdminCategoriesWrapper">
+      <div className="szAdminSectionTopBar">
+        <div>
+          <h3>🏷️ إدارة أقسام وتصنيفات المتجر</h3>
+          <p>أضف تصنيفات جديدة لتظهر فوراً في شريط الفئات والهيدر للمتسوقين.</p>
         </div>
-        <div className="formRow">
-          <button className="primaryBtn" type="submit" disabled={saving}>
-            {saving ? "جارٍ الحفظ..." : form.id ? "حفظ التعديل" : "إضافة تصنيف"}
-          </button>
-          <button className="secondaryBtn" type="button" onClick={resetForm}>
-            مسح
-          </button>
-        </div>
-      </form>
+        <button
+          type="button"
+          onClick={() => {
+            if (!showAddForm) resetForm();
+            setShowAddForm(!showAddForm);
+          }}
+          className="szAdminAddBtn"
+        >
+          {showAddForm ? "إغلاق النموذج" : "+ إضافة تصنيف جديد"}
+        </button>
+      </div>
 
-      {message ? <p style={{ marginTop: 0, color: "#f0c14b" }}>{message}</p> : null}
-      {loading ? <p>جارٍ تحميل التصنيفات...</p> : null}
+      {message && <div className="szAdminAlert">{message}</div>}
 
-      <div className="sellerProductsList">
-        {!loading && categories.length === 0 ? <p>لا توجد تصنيفات حتى الآن.</p> : null}
-        {categories.map((category) => (
-          <div className="sellerProductRow" key={category.id}>
-            <div>
-              <strong>{category.name}</strong>
-              <p style={{ margin: "6px 0 0" }}>{category.slug}</p>
+      {showAddForm && (
+        <form onSubmit={submitForm} className="szAdminAddUserCard">
+          <div className="szEditorHeader">
+            <h4>{form.id ? "تعديل بيانات التصنيف" : "إنشاء تصنيف جديد"}</h4>
+          </div>
+          <div className="szFormGrid2">
+            <div className="szFormGroup">
+              <label className="szFormLabel">اسم القسم (عربي) *</label>
+              <input
+                className="szFormInput"
+                name="name"
+                value={form.name}
+                onChange={onChange}
+                placeholder="مثال: إلكترونيات، عطور، ساعات..."
+                required
+              />
             </div>
-            <div className="sellerProductActions">
-              <span>{category._count?.products || 0} منتج</span>
-              <button className="secondaryBtn" type="button" onClick={() => editCategory(category)}>
-                تعديل
-              </button>
-              <button className="secondaryBtn" type="button" onClick={() => removeCategory(category)}>
-                حذف
-              </button>
+            <div className="szFormGroup">
+              <label className="szFormLabel">الاسم اللطيف (Slug إنجليزي)</label>
+              <input
+                className="szFormInput"
+                name="slug"
+                value={form.slug}
+                onChange={onChange}
+                placeholder="مثال: electronics"
+              />
             </div>
           </div>
-        ))}
-      </div>
+          <div className="szFormActionButtons">
+            <button className="szSubmitProductBtn" type="submit" disabled={saving}>
+              {saving ? "جارِ الحفظ..." : form.id ? "✓ حفظ التعديل" : "+ إضافة التصنيف"}
+            </button>
+            <button className="szCancelFormBtn" type="button" onClick={resetForm}>
+              إلغاء
+            </button>
+          </div>
+        </form>
+      )}
+
+      {loading ? (
+        <div className="szAdminLoading">جارِ تحميل التصنيفات...</div>
+      ) : categories.length === 0 ? (
+        <div className="szAdminEmpty">
+          <span>🏷️</span>
+          <h3>لا توجد تصنيفات حالياً</h3>
+        </div>
+      ) : (
+        <div className="szAdminCategoryGrid">
+          {categories.map((c) => {
+            const icon = categoryIconMap[c.name] || "📦";
+            return (
+              <div className="szAdminCategoryCard" key={c.id}>
+                <div className="szCategoryCardTop">
+                  <span className="szCatBigIcon">{icon}</span>
+                  <div>
+                    <strong className="szCatName">{c.name}</strong>
+                    <small className="szCatSlug">{c.slug || "بدون slug"}</small>
+                  </div>
+                </div>
+
+                <div className="szCatStatsRow">
+                  <span className="szCatProductCount">
+                    🛍️ {c._count?.products || 0} منتج معروض
+                  </span>
+                  <div className="szCatCardBtns">
+                    <button
+                      type="button"
+                      onClick={() => editCategory(c)}
+                      className="szCatMiniBtn szCatMiniBtn--edit"
+                    >
+                      تعديل
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeCategory(c)}
+                      className="szCatMiniBtn szCatMiniBtn--delete"
+                    >
+                      حذف
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

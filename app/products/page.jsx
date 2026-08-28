@@ -1,6 +1,7 @@
 import Link from "next/link";
 import SiteHeader from "../../components/SiteHeader";
 import SectionHeading from "../../components/SectionHeading";
+import ProductCard from "../../components/ProductCard";
 import { apiJson } from "../../lib/api";
 import { getProductImage } from "../../lib/media";
 import { categories as fallbackCategories, products as fallbackProducts } from "../../lib/mock-data";
@@ -149,22 +150,9 @@ export default async function ProductsPage({ searchParams }) {
                 <span>{totalProducts.toLocaleString()} منتج</span>
               </div>
 
-              <div className="amazonDealsGrid">
+              <div className="szProductGrid">
                 {products.map((product) => (
-                  <Link href={`/products/${product.id}`} className="amazonDealCard" key={product.id}>
-                    <div className="amazonDealImageWrap">
-                      <img className="amazonDealImage" src={getProductImage(product)} alt={product.name} />
-                    </div>
-                    <span className="amazonDealTag">
-                      {product.vendor?.storeName || product.vendor || "سودان زون"}
-                    </span>
-                    <h3>{product.name}</h3>
-                    <p>{product.description}</p>
-                    <div className="amazonDealMeta">
-                      <strong>{Number(product.price).toLocaleString()} جنيه سوداني</strong>
-                      <span>التقييم {product.rating || "4.5"}</span>
-                    </div>
-                  </Link>
+                  <ProductCard key={product.id} product={product} />
                 ))}
               </div>
             </div>

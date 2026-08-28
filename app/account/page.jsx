@@ -3,13 +3,28 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import SiteHeader from "../../components/SiteHeader";
-import SectionHeading from "../../components/SectionHeading";
 import { apiJson } from "../../lib/api";
+
+const sudanCities = [
+  "الخرطوم",
+  "أم درمان",
+  "بحري",
+  "بورتسودان",
+  "كسلا",
+  "القضارف",
+  "ود مدني",
+  "عطبرة",
+  "شندي",
+  "الأبيض",
+  "كوستي",
+  "الفاشر",
+  "دنقلا",
+];
 
 const emptyProfile = {
   name: "",
   email: "",
-  city: "",
+  city: "الخرطوم",
   shippingAddress: "",
   alternatePhone: "",
 };
@@ -40,7 +55,7 @@ export default function AccountPage() {
         setProfile({
           name: current.name || "",
           email: current.email || "",
-          city: current.city || "",
+          city: current.city || "الخرطوم",
           shippingAddress: current.shippingAddress || "",
           alternatePhone: current.alternatePhone || "",
         });
@@ -52,6 +67,7 @@ export default function AccountPage() {
   }, []);
 
   const canAccessSeller = useMemo(() => user && ["VENDOR", "ADMIN"].includes(user.role), [user]);
+  const canAccessAdmin = useMemo(() => user && user.role === "ADMIN", [user]);
 
   const onChange = (event) => {
     const { name, value } = event.target;
@@ -77,9 +93,10 @@ export default function AccountPage() {
       setUser(result.user);
       localStorage.setItem("sudanzonUser", JSON.stringify(result.user));
       window.dispatchEvent(new Event("sudanzon-user-updated"));
-      setMessage("تم حفظ بيانات الحساب بنجاح");
+      setMessage("✓ تم حفظ بيانات الملف الشخصي وعنوان التوصيل بنجاح!");
+      setTimeout(() => setMessage(""), 3500);
     } catch (error) {
-      setMessage(error.message);
+      setMessage(error.message || "تعذر حفظ البيانات");
     } finally {
       setSaving(false);
     }
@@ -94,125 +111,200 @@ export default function AccountPage() {
   };
 
   return (
-    <main className="pageShell">
+    <main className="szPageShell">
       <SiteHeader />
-      <section className="sectionBlock">
+
+      <section className="szAccountPageSection">
         <div className="container">
-          <SectionHeading title="حسابي" subtitle="إدارة بياناتك وعنوان الشحن من مكان واحد" />
+          {/* Breadcrumb */}
+          <nav className="szBreadcrumb" aria-label="مسار التنقل">
+            <Link href="/">الرئيسية</Link>
+            <span>/</span>
+            <span className="szBreadcrumbCurrent">إدارة الحساب والملف الشخصي</span>
+          </nav>
 
-          {message ? <div className="cardPanel">{message}</div> : null}
+          {/* Profile Hero Header Card */}
+          <div className="szAccountHeroCard">
+            <div className="szAccountHeroLeft">
+              <div className="szAccountAvatarLarge">
+                {user?.name ? user.name.charAt(0) : "👤"}
+              </div>
+              <div className="szAccountHeroInfo">
+                <span className="szDashboardBadge">
+                  {user?.role === "ADMIN"
+                    ? "🛡️ مدير النظام"
+                    : user?.role === "VENDOR"
+                      ? "🏬 تاجر معتمد"
+                      : user?.role === "COURIER"
+                        ? "🚚 مندوب توصيل"
+                        : "👤 عميل متسوق"}
+                </span>
+                <h1 className="szAccountUserName">{user?.name || "المستخدم"}</h1>
+                <p className="szAccountUserEmail">
+                  {user?.phone || user?.email || "حساب سودان زون"} • مصادقة:{" "}
+                  {user?.authProvider === "GOOGLE" ? "Google" : "تسجيل محلي"}
+                </p>
+              </div>
+            </div>
 
-          {user ? (
-            <div className="accountHero cardPanel">
-              <div>
-                <span className="dashboardHeroTag">ملف المستخدم</span>
-                <h3>{user.name}</h3>
-                <p>
-                  {user.role} · {user.authProvider === "GOOGLE" ? "دخول Google" : "دخول محلي"}
+            <div className="szAccountHeroActions">
+              <button type="button" onClick={logout} className="szLogoutButton">
+                <span>🚪 تسجيل الخروج</span>
+              </button>
+            </div>
+          </div>
+
+          {message && <div className="szAdminAlert">{message}</div>}
+
+          {/* Grid Layout: Profile Form (60%) & Quick Nav Cards (40%) */}
+          <div className="szAccountMainGrid">
+            {/* Profile Edit Form */}
+            <form className="szAccountFormCard" onSubmit={saveProfile}>
+              <div className="szEditorHeader">
+                <h2 className="szCardSectionTitle">✏️ تعديل البيانات الشخصية وعنوان التوصيل</h2>
+                <p className="szCardSectionSubtitle">
+                  حدّث بياناتك لتسهيل وسرعة وصول مناديب التوصيل إلى موقعك.
                 </p>
               </div>
 
-              <div className="accountHeroMeta">
-                <span className="accountMetaPill">{user.phone || "لا يوجد هاتف"}</span>
-                <span className="accountMetaPill">{user.email || "لا يوجد بريد"}</span>
-                <span className="accountMetaPill">{user.city || "لا توجد مدينة"}</span>
-              </div>
-            </div>
-          ) : null}
+              {loading ? (
+                <div className="szAdminLoading">جارِ تحميل بيانات الحساب...</div>
+              ) : (
+                <>
+                  <div className="szFormGrid2">
+                    <div className="szFormGroup">
+                      <label className="szFormLabel">الاسم الكامل *</label>
+                      <input
+                        className="szFormInput"
+                        name="name"
+                        value={profile.name}
+                        onChange={onChange}
+                        placeholder="الاسم الكامل"
+                        required
+                      />
+                    </div>
 
-          <div className="accountGrid">
-            <form className="cardPanel formPanel" onSubmit={saveProfile}>
-              <h3>الملف الشخصي</h3>
+                    <div className="szFormGroup">
+                      <label className="szFormLabel">البريد الإلكتروني</label>
+                      <input
+                        className="szFormInput"
+                        name="email"
+                        type="email"
+                        value={profile.email}
+                        onChange={onChange}
+                        placeholder="user@sudanzon.com"
+                      />
+                    </div>
+                  </div>
 
-              {loading ? <p>جاري تحميل البيانات...</p> : null}
+                  <div className="szFormGrid2">
+                    <div className="szFormGroup">
+                      <label className="szFormLabel">المدينة / الولاية *</label>
+                      <select
+                        className="szFormSelect"
+                        name="city"
+                        value={profile.city}
+                        onChange={onChange}
+                        required
+                      >
+                        {sudanCities.map((c) => (
+                          <option key={c} value={c}>
+                            🇸🇩 {c}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-              <input
-                className="input"
-                name="name"
-                value={profile.name}
-                onChange={onChange}
-                placeholder="الاسم الكامل"
-                required
-              />
-              <input
-                className="input"
-                name="email"
-                type="email"
-                value={profile.email}
-                onChange={onChange}
-                placeholder="البريد الإلكتروني"
-              />
-              <div className="formRow">
-                <input
-                  className="input"
-                  name="city"
-                  value={profile.city}
-                  onChange={onChange}
-                  placeholder="المدينة"
-                />
-                <input
-                  className="input"
-                  name="alternatePhone"
-                  value={profile.alternatePhone}
-                  onChange={onChange}
-                  placeholder="رقم إضافي"
-                />
-              </div>
-              <textarea
-                className="input"
-                name="shippingAddress"
-                rows={4}
-                value={profile.shippingAddress}
-                onChange={onChange}
-                placeholder="عنوان الشحن الكامل"
-              />
+                    <div className="szFormGroup">
+                      <label className="szFormLabel">رقم هاتف إضافي (بديل)</label>
+                      <input
+                        className="szFormInput"
+                        name="alternatePhone"
+                        value={profile.alternatePhone}
+                        onChange={onChange}
+                        placeholder="0912345678"
+                      />
+                    </div>
+                  </div>
 
-              <div className="formRow">
-                <button className="primaryBtn" type="submit" disabled={saving}>
-                  {saving ? "جاري الحفظ..." : "حفظ البيانات"}
-                </button>
-                <button className="secondaryBtn" type="button" onClick={logout}>
-                  تسجيل الخروج
-                </button>
-              </div>
+                  <div className="szFormGroup">
+                    <label className="szFormLabel">عنوان الشحن والتوصيل بالتفصيل</label>
+                    <textarea
+                      className="szFormTextarea"
+                      name="shippingAddress"
+                      rows={3}
+                      value={profile.shippingAddress}
+                      onChange={onChange}
+                      placeholder="مثال: الخرطوم، حي الرياض، شارع المشتل، بالقرب من المركز الطبي..."
+                    />
+                  </div>
+
+                  <div className="szFormActionButtons">
+                    <button className="szSubmitProductBtn" type="submit" disabled={saving}>
+                      {saving ? "جارِ الحفظ..." : "✓ حفظ التعديلات"}
+                    </button>
+                  </div>
+                </>
+              )}
             </form>
 
-            <div className="cardPanel">
-              <h3>ملخص الحساب</h3>
-              {user ? (
-                <div className="accountInfo">
-                  <p>الاسم: {user.name}</p>
-                  <p>الهاتف: {user.phone || "غير محدد"}</p>
-                  <p>البريد: {user.email || "لا يوجد بريد إلكتروني"}</p>
-                  <p>المدينة: {user.city || "غير محددة"}</p>
-                  <p>العنوان: {user.shippingAddress || "غير محدد"}</p>
-                  <p>رقم إضافي: {user.alternatePhone || "غير محدد"}</p>
-                  <div className="accountRoleLine">
-                    <span className="amazonMiniTag">{user.role}</span>
-                    <span className="amazonMiniTag">{user.authProvider}</span>
-                  </div>
-                </div>
-              ) : null}
-
-              <div className="accountQuickGrid">
-                <Link className="accountQuickCard" href="/orders">
-                  <strong>طلباتي</strong>
-                  <span>مراجعة حالات الطلب والتسليم</span>
-                </Link>
-                <Link className="accountQuickCard" href="/cart">
-                  <strong>السلة</strong>
-                  <span>متابعة المنتجات قبل الدفع</span>
-                </Link>
-                {canAccessSeller ? (
-                  <Link className="accountQuickCard" href="/seller">
-                    <strong>لوحة البائع</strong>
-                    <span>للمتاجر المعتمدة فقط</span>
+            {/* Quick Navigation Hub */}
+            <div className="szAccountSideHub">
+              <div className="szAccountSideCard">
+                <h3 className="szAsideCardTitle">⚡ لوحة الوصول السريع</h3>
+                <div className="szAccountQuickList">
+                  <Link href="/orders" className="szAccountQuickItem">
+                    <span className="szQuickItemIcon">📦</span>
+                    <div>
+                      <strong>طلباتي ومتابعة الشحنات</strong>
+                      <small>تتبع مسار شحناتك الحالية وتاريخ المشتريات</small>
+                    </div>
                   </Link>
-                ) : null}
-                <Link className="accountQuickCard" href="/products">
-                  <strong>التسوق</strong>
-                  <span>استمرار في التصفح والبحث</span>
-                </Link>
+
+                  <Link href="/cart" className="szAccountQuickItem">
+                    <span className="szQuickItemIcon">🛒</span>
+                    <div>
+                      <strong>سلة المشتريات</strong>
+                      <small>مراجعة المنتجات المختارة وإتمام الشراء</small>
+                    </div>
+                  </Link>
+
+                  {canAccessSeller && (
+                    <Link href="/seller" className="szAccountQuickItem szAccountQuickItem--seller">
+                      <span className="szQuickItemIcon">🏬</span>
+                      <div>
+                        <strong>لوحة تحكم البائع</strong>
+                        <small>إدارة المنتجات، المبيعات، ومخزون المتجر</small>
+                      </div>
+                    </Link>
+                  )}
+
+                  {canAccessAdmin && (
+                    <Link href="/admin" className="szAccountQuickItem szAccountQuickItem--admin">
+                      <span className="szQuickItemIcon">🛡️</span>
+                      <div>
+                        <strong>مركز الإدارة والتحكم</strong>
+                        <small>مؤشرات الأداء وإدارة المتاجر والمناديب</small>
+                      </div>
+                    </Link>
+                  )}
+
+                  <Link href="/terms" className="szAccountQuickItem">
+                    <span className="szQuickItemIcon">📄</span>
+                    <div>
+                      <strong>الشروط والأحكام</strong>
+                      <small>اتفاقية الاستخدام وحقوق المشتري والتاجر</small>
+                    </div>
+                  </Link>
+
+                  <Link href="/privacy" className="szAccountQuickItem">
+                    <span className="szQuickItemIcon">🔒</span>
+                    <div>
+                      <strong>سياسة الخصوصية</strong>
+                      <small>أمان وسرية بيانات المستخدمين والمدفوعات</small>
+                    </div>
+                  </Link>
+                </div>
               </div>
             </div>
           </div>

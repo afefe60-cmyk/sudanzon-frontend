@@ -3,9 +3,8 @@ import CategoryStrip from "../components/CategoryStrip";
 import MarketPulse from "../components/MarketPulse";
 import PromoHeroSlider from "../components/PromoHeroSlider";
 import SiteHeader from "../components/SiteHeader";
-import SectionHeading from "../components/SectionHeading";
+import ProductCard from "../components/ProductCard";
 import { apiJson } from "../lib/api";
-import { getProductImage } from "../lib/media";
 import { categories as fallbackCategories, products as fallbackProducts } from "../lib/mock-data";
 
 async function loadHomeData() {
@@ -16,8 +15,8 @@ async function loadHomeData() {
     ]);
 
     return {
-      products: productsResult.items,
-      categories: categoriesResult.items.map((item) => item.name || item),
+      products: productsResult.items || [],
+      categories: (categoriesResult.items || []).map((item) => item.name || item),
     };
   } catch {
     return {
@@ -28,137 +27,208 @@ async function loadHomeData() {
 }
 
 const categoryIcons = {
-  "إلكترونيات": "/products/electronics.svg",
-  "موبايلات": "/products/phones.svg",
-  "كمبيوتر": "/products/computer.svg",
-  "عطور": "/products/perfume.svg",
-  "ملابس": "/products/fashion.svg",
-  "أحذية": "/products/shoes.svg",
-  "أدوات منزلية": "/products/home.svg",
-  "سوبر ماركت": "/products/grocery.svg",
-  "مستحضرات تجميل": "/products/beauty.svg",
-  "قطع غيار السيارات": "/products/auto.svg",
+  "إلكترونيات": "/products/electronics.jpg",
+  "موبايلات": "/products/phones.jpg",
+  "كمبيوتر": "/products/computer.jpg",
+  "عطور": "/products/perfume.jpg",
+  "ملابس": "/products/fashion.jpg",
+  "أحذية": "/products/shoes.jpg",
+  "أدوات منزلية": "/products/home.jpg",
+  "سوبر ماركت": "/products/grocery.jpg",
+  "مستحضرات تجميل": "/products/beauty.jpg",
+  "قطع غيار السيارات": "/products/auto.jpg",
 };
-
-function productSection(title, subtitle, items) {
-  return (
-    <section className="sectionBlock">
-      <div className="container noonShelf">
-        <div className="noonShelfHeader">
-          <SectionHeading title={title} subtitle={subtitle} />
-          <Link className="noonShelfLink" href="/products">
-            عرض الكل
-          </Link>
-        </div>
-        <div className="amazonDealsGrid noonDealsGrid">
-          {items.map((product, index) => (
-            <Link href={`/products/${product.id}`} className="amazonDealCard noonDealCard" key={`${title}-${product.id}`}>
-              <div className="amazonDealImageWrap noonDealImageWrap">
-                <img className="amazonDealImage" src={getProductImage(product)} alt={product.name} />
-              </div>
-              <span className={`amazonDealTag noonDealTag ${index === 0 ? "is-hot" : ""}`}>
-                {index === 0 ? "عرض مميز" : "جاهز للطلب"}
-              </span>
-              <h3>{product.name}</h3>
-              <p>{product.description}</p>
-              <div className="amazonDealMeta noonDealMeta">
-                <strong>{Number(product.price).toLocaleString()} جنيه سوداني</strong>
-                <span>المخزون {product.stock}</span>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
 
 export default async function HomePage() {
   const { products, categories } = await loadHomeData();
-  const heroStats = [
-    { label: "منتج جاهز", value: products.length.toLocaleString() },
-    { label: "تصنيف نشط", value: categories.length.toLocaleString() },
-    { label: "متجر بارز", value: "4" },
-  ];
-  const featuredCategoryLinks = categories.slice(0, 6);
 
   const sections = [
     {
-      title: "عروض اليوم",
-      subtitle: "اختيارات يومية مرتبة بعناية لتسهيل قرار الشراء بسرعة.",
+      id: "hot-deals",
+      title: "عروض اليوم المميزة",
+      badge: "🔥 تخفيضات كبرى",
+      subtitle: "أفضل الأسعار والتخفيضات اليومية مع خيارات الدفع عند الاستلام وبنكك.",
       items: products.slice(0, 4),
+      isHot: true,
+      linkText: "استعراض كل العروض",
+      linkHref: "/products?q=عروض",
     },
     {
-      title: "منتجات جديدة",
-      subtitle: "إضافات حديثة تمنح الصفحة تنوعًا بصريًا وعرضًا واضحًا.",
+      id: "new-arrivals",
+      title: "وصل حديثاً إلى المنصة",
+      badge: "✨ جديد",
+      subtitle: "تشكيلات حصرية ومنتجات أضيفت حديثاً من أبرز المتاجر المعتمدة.",
       items: products.slice(4, 8),
+      linkText: "مشاهدة الأحدث",
+      linkHref: "/products?sort=new",
     },
     {
-      title: "الأكثر مبيعًا",
-      subtitle: "منتجات أثبتت حضورها بين العملاء وتناسب الواجهة الأولى.",
+      id: "best-sellers",
+      title: "المنتجات الأكثر مبيعاً",
+      badge: "🏆 الأكثر طلباً",
+      subtitle: "خيارات نالت ثقة وإعجاب آلاف المتسوقين في كافة أنحاء السودان.",
       items: products.slice(8, 12),
+      linkText: "عرض الأكثر طلباً",
+      linkHref: "/products?sort=popular",
     },
     {
-      title: "مختارات أسبوعية",
-      subtitle: "مجموعة متجددة لعرض البضائع بشكل احترافي ومنظم.",
+      id: "weekly-picks",
+      title: "مختارات سودان زون الأسبوعية",
+      badge: "⭐ اختيارات المحرر",
+      subtitle: "منتجات موثوقة بجودة عالية تم فحصها وترشيحها من فريق المنصة.",
       items: products.slice(12, 16),
+      linkText: "تصفح الكل",
+      linkHref: "/products",
     },
   ];
 
   const featuredStores = [
-    { title: "متجر طيب الجنان للعطور", subtitle: "عطور وهدايا مختارة", tone: "is-gold", image: "/products/perfume.svg" },
-    { title: "متجر إلكترونيات الخرطوم", subtitle: "هواتف وسماعات وأجهزة", tone: "is-sky", image: "/products/electronics.svg" },
-    { title: "متجر ملابس السودان", subtitle: "أزياء وأحذية يومية", tone: "is-rose", image: "/products/fashion.svg" },
-    { title: "متجر البيت العصري", subtitle: "أدوات منزلية عملية", tone: "is-mint", image: "/products/home.svg" },
+    { title: "متجر طيب الجنان للعطور", subtitle: "عطور وهدايا مختارة", image: "/products/perfume.jpg" },
+    { title: "متجر إلكترونيات الخرطوم", subtitle: "هواتف وسماعات وأجهزة", image: "/products/electronics.jpg" },
+    { title: "متجر أزياء النيلين", subtitle: "ملابس وأحذية عصرية", image: "/products/fashion.jpg" },
+    { title: "متجر البيت العصري", subtitle: "أدوات منزلية ومطبخ", image: "/products/home.jpg" },
   ];
 
   const trustCards = [
     {
-      title: "لوحة البائعين",
-      subtitle: "إدارة المنتجات والطلبات والشحن من مكان واحد.",
-      image: "/banners/hero-2.svg",
+      icon: "🛡️",
+      title: "تسوق آمن وموثوق",
+      subtitle: "ضمان جودة المنتجات وحماية كاملة لبيانات المتسوقين وحقوق المشتري.",
     },
     {
-      title: "الدفع عند الاستلام",
-      subtitle: "تجربة شراء محلية واضحة وسهلة تناسب السوق السوداني.",
-      image: "/banners/hero-3.svg",
+      icon: "💵",
+      title: "دفع متعدد ومرن",
+      subtitle: "ادفع نقداً عند الاستلام أو عبر تطبيق بنكك والتحويلات المصرفية المحلية بسهولة.",
     },
     {
-      title: " شحن وتوصيل  ",
-      subtitle: "       مساحة مناسبة لعرض الشركات الداعمة وخدمات التوصيل داخل السودان بشكل أنيق وواضح..",
-      image: "/banners/hero-1.svg",
+      icon: "🚚",
+      title: "شحن سريع لكافة الولايات",
+      subtitle: "شبكة توصيل تغطي الخرطوم والولايات بأفضل تكلفة وأسرع وقت ممكن.",
+    },
+    {
+      icon: "🏪",
+      title: "دعم مستمر للتجار والبائعين",
+      subtitle: "لوحة تحكم متطورة لإدارة المبيعات والمخزون والتواصل المباشر مع العملاء.",
     },
   ];
 
   return (
-    <main className="pageShell amazonPage noonPage">
+    <main className="szPageShell">
       <SiteHeader />
 
-      <CategoryStrip categories={categories} categoryIcons={categoryIcons} />
+      {/* Hero Banner Slider */}
       <PromoHeroSlider />
+
+      {/* Category Strip */}
+      <CategoryStrip categories={categories} categoryIcons={categoryIcons} />
+
+      {/* Market Live Pulse */}
       <MarketPulse products={products} stores={featuredStores} />
 
-      {sections.map((section) => productSection(section.title, section.subtitle, section.items))}
+      {/* Product Sections */}
+      {sections.map((section) => (
+        <section className="szProductSection" key={section.id}>
+          <div className="container">
+            <div className="szSectionHeaderRow">
+              <div className="szSectionTitleWrap">
+                <span className="szSectionBadge">{section.badge}</span>
+                <h2 className="szSectionMainTitle">{section.title}</h2>
+                <p className="szSectionSubtitle">{section.subtitle}</p>
+              </div>
+              <Link className="szSectionViewAllBtn" href={section.linkHref}>
+                <span>{section.linkText}</span>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+              </Link>
+            </div>
 
-      <section className="sectionBlock">
+            <div className="szProductGrid">
+              {section.items.map((product, idx) => (
+                <ProductCard
+                  key={`${section.id}-${product.id}`}
+                  product={product}
+                  isHot={section.isHot && idx === 0}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+      ))}
+
+      {/* Trust & Guarantee Section */}
+      <section className="szTrustSection">
         <div className="container">
-          <SectionHeading
-            title="لماذا سودان زون"
-            subtitle="واجهة جاهزة للنشر تجمع الهوية المحلية مع عرض حديث وواضح."
-          />
-          <div className="noonBenefitGrid noonBenefitGrid--image">
+          <div className="szTrustHeader">
+            <span className="szSectionBadge">⭐ معايير الجودة</span>
+            <h2 className="szSectionMainTitle">لماذا يفضل المتسوقون سودان زون؟</h2>
+            <p className="szSectionSubtitle">نقدم لك تجربة تسوق إلكتروني متكاملة صُممت خصيصاً لتلبي احتياجات السوق السوداني.</p>
+          </div>
+
+          <div className="szTrustGrid">
             {trustCards.map((card) => (
-              <div className="amazonBelowCard noonBenefitCard noonBenefitCard--image" key={card.title}>
-                <div className="noonBenefitVisual">
-                  <img src={card.image} alt={card.title} />
-                </div>
-                <h3>{card.title}</h3>
-                <p>{card.subtitle}</p>
+              <div className="szTrustCard" key={card.title}>
+                <div className="szTrustIconWrap">{card.icon}</div>
+                <h3 className="szTrustCardTitle">{card.title}</h3>
+                <p className="szTrustCardDesc">{card.subtitle}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
+
+      {/* App Footer */}
+      <footer className="szFooter">
+        <div className="container szFooterInner">
+          <div className="szFooterBrand">
+            <Link href="/" className="szFooterLogoLink">
+              <img src="/logo.png" alt="سودان زون" className="szFooterLogoImg" />
+            </Link>
+            <p className="szFooterDesc">
+              المنصة السودانية الأولى المتكاملة للتجارة الإلكترونية متعددة البائعين. نربط التجار بالمشترين في بيئة آمنة وسهلة.
+            </p>
+            <div className="szPaymentBadges">
+              <span className="szPayBadge">💵 الدفع عند الاستلام</span>
+              <span className="szPayBadge">🏦 بنكك - Bankak</span>
+              <span className="szPayBadge">💳 بطاقات الصراف</span>
+            </div>
+          </div>
+
+          <div className="szFooterLinksGroup">
+            <strong>روابط سريعة</strong>
+            <Link href="/products">جميع المنتجات</Link>
+            <Link href="/products?q=عروض">عروض وخصومات</Link>
+            <Link href="/orders">متابعة شحنتك</Link>
+            <Link href="/cart">سلة الشراء</Link>
+          </div>
+
+          <div className="szFooterLinksGroup">
+            <strong>للبائعين والشركاء</strong>
+            <Link href="/auth/vendor">تسجيل متجر جديد</Link>
+            <Link href="/seller">لوحة البائع</Link>
+            <Link href="/shipping">خدمات التوصيل والشحن</Link>
+            <Link href="/terms">الشروط والأحكام</Link>
+          </div>
+
+          <div className="szFooterLinksGroup">
+            <strong>الدعم والمساعدة</strong>
+            <span>📞 الهاتف: 0907620105 - 0116731488</span>
+            <span>✉️ البريد: info@sudanzon.com</span>
+            <span>📍 الخرطوم، جمهورية السودان</span>
+          </div>
+        </div>
+
+        <div className="szFooterBottom">
+          <div className="container szFooterBottomInner">
+            <p>© {new Date().getFullYear()} سودان زون (SudanZon). جميع الحقوق محفوظة.</p>
+            <div className="szFooterBottomLinks">
+              <Link href="/privacy">سياسة الخصوصية</Link>
+              <span>•</span>
+              <Link href="/terms">اتفاقية الاستخدام</Link>
+            </div>
+          </div>
+        </div>
+      </footer>
     </main>
   );
 }

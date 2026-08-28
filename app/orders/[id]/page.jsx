@@ -4,65 +4,72 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import SiteHeader from "../../../components/SiteHeader";
-import SectionHeading from "../../../components/SectionHeading";
 import { apiJson } from "../../../lib/api";
 import { getProductImage } from "../../../lib/media";
 
-const statusSteps = ["جديد", "قيد المعالجة", "تم الشحن", "وصل للمندوب", "تم التسليم", "ملغي"];
-const shipmentSteps = ["تم الاستلام", "في الطريق", "تم التسليم"];
-const orderStatusOptions = ["جديد", "قيد المعالجة", "تم الشحن", "وصل للمندوب", "تم التسليم", "ملغي"];
-const shipmentStatusOptions = ["تم الاستلام", "في الطريق", "تم التسليم"];
+const timelineSteps = [
+  {
+    key: "PENDING",
+    icon: "📝",
+    title: "تم تسجيل وتأكيد الطلب",
+    desc: "تم استلام طلبك بنجاح وجارِ إرساله إلى المتجر لتجهيز المحتويات.",
+  },
+  {
+    key: "PROCESSING",
+    icon: "📦",
+    title: "قيد التجهيز والتغليف",
+    desc: "يقوم التاجر بتجهيز المنتجات وتغليفها بعناية لتسليمها لشركة الشحن.",
+  },
+  {
+    key: "SHIPPED",
+    icon: "🚚",
+    title: "خرج مع مندوب التوصيل",
+    desc: "الشحنة الآن في عهدة مندوب التوصيل وهي في طريقها إلى عنوانك المحدد.",
+  },
+  {
+    key: "DELIVERED",
+    icon: "✓",
+    title: "تم التسليم بنجاح",
+    desc: "تم تسليم الطلب إلى العميل واستلام الدفع بنجاح. شكراً لتسوقكم عبر SudanZon!",
+  },
+];
 
-function getStepIndex(list, status) {
-  const index = list.indexOf(status);
-  return index === -1 ? 0 : index;
-}
+const statusStepIndices = {
+  PENDING: 0,
+  PROCESSING: 1,
+  SHIPPED: 2,
+  DELIVERED: 3,
+  CANCELLED: -1,
+};
 
-function formatDate(value) {
-  if (!value) {
-    return "غير متوفر";
-  }
-
-  return new Intl.DateTimeFormat("ar", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
+function formatDate(dateStr) {
+  if (!dateStr) return "غير متوفر";
+  return new Intl.DateTimeFormat("ar-SD", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(dateStr));
 }
 
 function formatPaymentMethod(value) {
   const map = {
-    CASH_ON_DELIVERY: "الدفع عند الاستلام",
-    BANKAK: "بنكك",
-    O_CASH: "أوكاش",
-    FAWRY: "فوري",
-    EASYCASH: "إيزي كاش",
-    VISA: "Visa",
-    MASTERCARD: "MasterCard",
-    PAYPAL: "PayPal",
+    CASH_ON_DELIVERY: "💵 الدفع عند الاستلام (كاش)",
+    BANKAK: "🏦 تطبيق بنكك (Bankak)",
+    CARD: "💳 بطاقة الصراف الآلي",
   };
-
-  return map[value] || value || "الدفع عند الاستلام";
-}
-
-function formatPaymentStatus(value) {
-  const map = {
-    pending: "قيد الانتظار",
-    paid: "مدفوع",
-    failed: "فشل الدفع",
-    refunded: "مسترد",
-  };
-
-  return map[value] || value || "قيد الانتظار";
+  return map[value] || value || "💵 الدفع عند الاستلام";
 }
 
 export default function OrderDetailPage() {
   const params = useParams();
   const orderId = params?.id;
   const [order, setOrder] = useState(null);
-  const [message, setMessage] = useState("جاري تحميل تفاصيل الطلب...");
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState("");
   const [currentRole, setCurrentRole] = useState(null);
-  const [selectedOrderStatus, setSelectedOrderStatus] = useState("");
-  const [selectedShipmentStatus, setSelectedShipmentStatus] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
 
   useEffect(() => {
     const token = localStorage.getItem("sudanzonToken");
@@ -81,6 +88,7 @@ export default function OrderDetailPage() {
 
     if (!orderId) {
       setMessage("رقم الطلب غير موجود");
+      setLoading(false);
       return;
     }
 
@@ -91,276 +99,255 @@ export default function OrderDetailPage() {
     })
       .then((result) => {
         setOrder(result.item || null);
-        setSelectedOrderStatus(result.item?.status || "");
-        setSelectedShipmentStatus(result.item?.shipment?.status || "");
+        setSelectedStatus(result.item?.status || "PENDING");
         setMessage("");
       })
-      .catch((error) => setMessage(error.message));
+      .catch((error) => setMessage(error.message))
+      .finally(() => setLoading(false));
   }, [orderId]);
 
-  const canEditOrderStatus = currentRole === "ADMIN" || currentRole === "VENDOR";
-  const canEditShipmentStatus = currentRole === "ADMIN" || currentRole === "COURIER";
+  const canEditStatus = currentRole === "ADMIN" || currentRole === "COURIER" || currentRole === "VENDOR";
 
-  const submitOrderStatus = async () => {
+  const submitStatusChange = async () => {
     const token = localStorage.getItem("sudanzonToken");
-    if (!token || !selectedOrderStatus) {
-      return;
-    }
+    if (!token || !selectedStatus) return;
 
     try {
-      const result = await apiJson(`/api/orders/${orderId}/status`, {
+      await apiJson(`/api/orders/${orderId}/status`, {
         method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status: selectedOrderStatus }),
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ status: selectedStatus }),
       });
-      setMessage(result.message || "تم تحديث الحالة");
+      setMessage("✓ تم تحديث حالة الطلب بنجاح");
       const refreshed = await apiJson(`/api/orders/${orderId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setOrder(refreshed.item || null);
-      setSelectedOrderStatus(refreshed.item?.status || "");
-      setSelectedShipmentStatus(refreshed.item?.shipment?.status || "");
+      setTimeout(() => setMessage(""), 3000);
     } catch (error) {
-      setMessage(error.message);
+      setMessage(error.message || "تعذر تحديث الحالة");
     }
   };
 
-  const submitShipmentStatus = async (status) => {
-    const token = localStorage.getItem("sudanzonToken");
-    if (!token || !status) {
-      return;
-    }
+  const currentStepIndex = useMemo(() => {
+    if (!order) return 0;
+    return statusStepIndices[order.status] ?? 0;
+  }, [order]);
 
-    try {
-      const result = await apiJson(`/api/orders/${orderId}/shipment-status`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status }),
-      });
-      setMessage(result.message || "تم تحديث حالة الشحنة");
-      const refreshed = await apiJson(`/api/orders/${orderId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setOrder(refreshed.item || null);
-      setSelectedOrderStatus(refreshed.item?.status || "");
-      setSelectedShipmentStatus(refreshed.item?.shipment?.status || "");
-    } catch (error) {
-      setMessage(error.message);
-    }
-  };
-
-  const orderStatusIndex = useMemo(() => getStepIndex(statusSteps, order?.status), [order]);
-  const shipmentStatusIndex = useMemo(
-    () => getStepIndex(shipmentSteps, order?.shipment?.status),
-    [order]
-  );
+  const itemsTotal = useMemo(() => {
+    if (!order?.items) return 0;
+    return order.items.reduce((sum, it) => sum + Number(it.price || 0) * Number(it.quantity || 1), 0);
+  }, [order]);
 
   return (
-    <main className="pageShell amazonPage">
+    <main className="szPageShell">
       <SiteHeader />
-      <section className="sectionBlock">
+
+      <section className="szOrderDetailSection">
         <div className="container">
-          <div className="marketToolbar">
-            <SectionHeading
-              title="تفاصيل الطلب"
-              subtitle="مراجعة الحالة، المنتجات، الدفع، والشحنة في صفحة واحدة."
-            />
-            <Link className="secondaryBtn" href="/orders">
-              العودة للطلبات
-            </Link>
-          </div>
+          {/* Breadcrumb Navigation */}
+          <nav className="szBreadcrumb" aria-label="مسار التنقل">
+            <Link href="/">الرئيسية</Link>
+            <span>/</span>
+            <Link href="/orders">طلباتي</Link>
+            <span>/</span>
+            <span className="szBreadcrumbCurrent">طلب #{orderId ? String(orderId).slice(0, 10) : ""}</span>
+          </nav>
 
-          {message ? <div className="cardPanel">{message}</div> : null}
-
-          {order ? (
-            <div className="orderDetailLayout">
-              <div className="orderDetailStack">
-                <div className="cardPanel orderTrackingCard">
-                  <div className="orderDetailHeader">
-                    <div>
-                      <span className="amazonMiniTag">{order.status}</span>
-                      <h3 style={{ margin: "10px 0 0" }}>{order.id}</h3>
-                      <p style={{ margin: "8px 0 0", color: "var(--amazon-muted)" }}>
-                        تاريخ الطلب: {formatDate(order.createdAt)}
-                      </p>
-                    </div>
-                    <div className="orderSummaryGrid">
-                      <div className="orderSummaryCard">
-                        <strong>{Number(order.total).toLocaleString()} جنيه سوداني</strong>
-                        <p>إجمالي الطلب</p>
-                      </div>
-                      <div className="orderSummaryCard">
-                        <strong>{formatPaymentStatus(order.payment?.status)}</strong>
-                        <p>حالة الدفع</p>
-                      </div>
-                    </div>
+          {loading ? (
+            <div className="szOrdersLoading">
+              <p>جارِ تحميل تفاصيل الطلب والتتبع...</p>
+            </div>
+          ) : !order ? (
+            <div className="szOrdersEmptyBox">
+              <span className="szOrdersEmptyIcon">⚠️</span>
+              <h2>الطلب غير متوفر أو تم حذفه</h2>
+              <p>{message || "تعذر العثور على بيانات هذا الطلب."}</p>
+              <Link href="/orders" className="szHeroBtn szHeroBtn--primary">
+                العودة لقائمة الطلبات
+              </Link>
+            </div>
+          ) : (
+            <div className="szOrderDetailWrapper">
+              {/* Order Header Summary Banner */}
+              <div className="szOrderBannerCard">
+                <div className="szOrderBannerInfo">
+                  <div className="szOrderBannerTopRow">
+                    <span className="szDashboardBadge">📦 شحنة نشطة</span>
+                    <span className="szOrderDateChip">تاريخ التسجيل: {formatDate(order.createdAt)}</span>
                   </div>
-
-                  <div className="orderTrackGrid">
-                    {statusSteps.map((step, index) => (
-                      <div className={`orderTrackStep ${index <= orderStatusIndex ? "is-active" : ""}`} key={step}>
-                        <div className="orderTrackBullet">{index + 1}</div>
-                        <div>
-                          <strong>{step}</strong>
-                          <p>
-                            {index === 0
-                              ? "تم تسجيل الطلب"
-                              : index === 1
-                                ? "قيد التجهيز داخل النظام"
-                                : index === 2
-                                  ? "تم تسليم الشحنة لشركة التوصيل"
-                                  : index === 3
-                                    ? "في طريقه إلى المندوب"
-                                    : "تمت المراجعة النهائية"}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="orderTrackGrid">
-                    {shipmentSteps.map((step, index) => (
-                      <div className={`orderTrackStep ${index <= shipmentStatusIndex ? "is-active" : ""}`} key={step}>
-                        <div className="orderTrackBullet">{index + 1}</div>
-                        <div>
-                          <strong>{step}</strong>
-                          <p>
-                            {step === "تم الاستلام"
-                              ? "تم تسليم الطلب لمركز الشحن"
-                              : step === "في الطريق"
-                                ? "الشحنة في الطريق إلى العنوان"
-                                : "وصل الطلب للعميل"}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {canEditOrderStatus || canEditShipmentStatus ? (
-                    <div className="orderAdminControls" style={{ marginTop: 18 }}>
-                      {canEditOrderStatus ? (
-                        <label>
-                          تغيير حالة الطلب
-                          <select
-                            className="input"
-                            value={selectedOrderStatus}
-                            onChange={(event) => setSelectedOrderStatus(event.target.value)}
-                          >
-                            {orderStatusOptions.map((status) => (
-                              <option key={status} value={status}>
-                                {status}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                      ) : null}
-
-                      {canEditShipmentStatus ? (
-                        <div style={{ display: "grid", gap: 10 }}>
-                          <strong style={{ display: "block", marginBottom: 4 }}>حالة الشحنة للمندوب</strong>
-                          <div className="orderAdminActions" style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                            {shipmentStatusOptions.map((status) => (
-                              <button
-                                key={status}
-                                type="button"
-                                className={`secondaryBtn ${selectedShipmentStatus === status ? "is-active" : ""}`}
-                                onClick={() => submitShipmentStatus(status)}
-                              >
-                                {status}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      ) : null}
-
-                      {canEditOrderStatus ? (
-                        <button className="primaryBtn" type="button" onClick={submitOrderStatus}>
-                          حفظ حالة الطلب
-                        </button>
-                      ) : null}
-                    </div>
-                  ) : null}
+                  <h1 className="szOrderMainTitle">الطلب #{order.id}</h1>
+                  <p className="szOrderSubtitle">
+                    طريقة الدفع: {formatPaymentMethod(order.paymentMethod || order.payment?.method)} • الوجهة: 📍 {order.city || "الخرطوم"}
+                  </p>
                 </div>
 
-                <div className="cardPanel orderItemsCard">
-                  <div className="orderItemsHeader">
-                    <SectionHeading title="عناصر الطلب" subtitle="المنتجات المطلوبة داخل هذا الطلب." />
-                    <Link className="secondaryBtn" href="/products">
-                      متابعة التسوق
-                    </Link>
-                  </div>
-
-                  <div className="orderInfoList">
-                    {order.items?.map((item) => (
-                      <div className="orderItemCard" key={item.id}>
-                        <img
-                          className="orderItemThumb"
-                          src={getProductImage(item.product || {})}
-                          alt={item.product?.name || "منتج"}
-                        />
-                        <div>
-                          <strong>{item.product?.name || "منتج"}</strong>
-                          <p>{item.product?.description || "وصف المنتج غير متوفر"}</p>
-                          <p>
-                            الكمية: {item.quantity} | البائع: {item.product?.vendor?.storeName || "SudanZon"}
-                          </p>
-                        </div>
-                        <strong>{Number(item.price * item.quantity).toLocaleString()} جنيه سوداني</strong>
-                      </div>
-                    ))}
-                  </div>
+                <div className="szOrderBannerPriceBox">
+                  <span className="szOrderBannerPriceLabel">المبلغ الإجمالي المستحق</span>
+                  <strong className="szOrderBannerPriceVal">
+                    {Number(order.total || 0).toLocaleString()} ج.س
+                  </strong>
+                  <span className="szOrderPaymentTag">
+                    {order.payment?.status === "paid" ? "✓ تم الدفع" : "الدفع عند الاستلام"}
+                  </span>
                 </div>
               </div>
 
-              <div className="orderDetailStack">
-                <div className="cardPanel">
-                  <SectionHeading title="بيانات الطلب" subtitle="معلومات أساسية حول العميل والشحنة." />
-                  <div className="orderInfoList">
-                    <div className="orderInfoRow">
-                      <span>المدينة</span>
-                      <strong>{order.shipment?.city || "الخرطوم"}</strong>
+              {message && <div className="szAdminAlert">{message}</div>}
+
+              {/* Visual Stepper Timeline Card */}
+              <div className="szTimelineCard">
+                <h2 className="szTimelineHeading">📍 خط سير ومسار الشحنة</h2>
+
+                {order.status === "CANCELLED" ? (
+                  <div className="szOrderCancelledNotice">
+                    <span className="szCancelIcon">✕</span>
+                    <div>
+                      <strong>تم إلغاء هذا الطلب</strong>
+                      <p>تم إيقاف معالجة هذا الطلب. يمكنك إعادة الطلب أو التواصل مع خدمة العملاء.</p>
                     </div>
-                    <div className="orderInfoRow">
-                      <span>الدفع</span>
-                      <strong>
-                        {formatPaymentMethod(order.paymentMethod || order.payment?.method)}
-                      </strong>
+                  </div>
+                ) : (
+                  <div className="szVisualStepperGrid">
+                    {timelineSteps.map((step, idx) => {
+                      const isDone = currentStepIndex >= idx;
+                      const isCurrent = currentStepIndex === idx;
+                      return (
+                        <div
+                          key={step.key}
+                          className={`szTimelineStep ${isDone ? "is-done" : ""} ${isCurrent ? "is-current" : ""}`}
+                        >
+                          <div className="szStepIconBadge">
+                            <span>{isDone && !isCurrent ? "✓" : step.icon}</span>
+                          </div>
+                          <div className="szStepBody">
+                            <strong className="szStepTitle">{step.title}</strong>
+                            <p className="szStepDesc">{step.desc}</p>
+                            {isCurrent && (
+                              <span className="szStepCurrentPill">الحالة الحالية الآن</span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Role Status Controls */}
+                {canEditStatus && (
+                  <div className="szOrderStaffControlRow">
+                    <span className="szStaffLabel">⚙️ لوحة المشرف/المندوب لتحديث الحالة:</span>
+                    <div className="szStaffSelectGroup">
+                      <select
+                        className="szFormSelect"
+                        value={selectedStatus}
+                        onChange={(e) => setSelectedStatus(e.target.value)}
+                      >
+                        <option value="PENDING">جديد (قيد المراجعة)</option>
+                        <option value="PROCESSING">قيد التجهيز في المتجر</option>
+                        <option value="SHIPPED">خرج مع المندوب</option>
+                        <option value="DELIVERED">تم التسليم للعميل</option>
+                        <option value="CANCELLED">إلغاء الطلب</option>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={submitStatusChange}
+                        className="szAddProductCtaBtn"
+                      >
+                        حفظ وتحديث الحالة
+                      </button>
                     </div>
-                    <div className="orderInfoRow">
-                      <span>عنوان الشحن</span>
-                      <strong>{order.shipment?.address || "غير محدد"}</strong>
-                    </div>
-                    <div className="orderInfoRow">
-                      <span>ملاحظة</span>
-                      <strong>{order.note || "لا توجد ملاحظات"}</strong>
-                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Two Column Layout: Items Table (65%) & Delivery Info (35%) */}
+              <div className="szOrderBottomLayout">
+                {/* Items List */}
+                <div className="szOrderItemsCard">
+                  <h3 className="szItemsListTitle">🛍️ المنتجات المطلوبة في الشحنة</h3>
+                  <div className="szItemsTableWrap">
+                    {(order.items || []).map((item) => {
+                      const pImg = getProductImage(item.product || {});
+                      const pPrice = Number(item.price || 0);
+                      const pQty = Number(item.quantity || 1);
+                      return (
+                        <div className="szOrderItemRow" key={item.id}>
+                          <img src={pImg} alt={item.product?.name || "منتج"} className="szOrderItemImg" />
+                          <div className="szOrderItemDetails">
+                            <span className="szItemVendorTag">
+                              🏬 {item.product?.vendor?.storeName || "سودان زون"}
+                            </span>
+                            <strong className="szItemTitle">{item.product?.name || "منتج معتمد"}</strong>
+                            <span className="szItemUnitPrice">
+                              {pPrice.toLocaleString()} ج.س × {pQty} قطعة
+                            </span>
+                          </div>
+                          <div className="szItemSubtotalBlock">
+                            <span className="szItemSubLabel">المجموع:</span>
+                            <strong className="szItemSubVal">{(pPrice * pQty).toLocaleString()} ج.س</strong>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
-                <div className="cardPanel">
-                  <SectionHeading title="العميل" subtitle="معلومات صاحب الطلب." />
-                  <div className="orderInfoList">
-                    <div className="orderInfoRow">
-                      <span>الاسم</span>
-                      <strong>{order.customer?.name || "غير متوفر"}</strong>
+                {/* Shipping & Financial Breakdown */}
+                <div className="szOrderAsideStack">
+                  {/* Delivery Address Card */}
+                  <div className="szDeliveryAddressCard">
+                    <h3 className="szAsideCardTitle">📍 عنوان التوصيل والشحن</h3>
+                    <div className="szAddressInfoList">
+                      <div className="szAddressInfoRow">
+                        <span className="szInfoLabel">المدينة / الولاية:</span>
+                        <strong className="szInfoVal">🇸🇩 {order.city || "الخرطوم"}</strong>
+                      </div>
+                      <div className="szAddressInfoRow">
+                        <span className="szInfoLabel">العنوان بالتفصيل:</span>
+                        <strong className="szInfoVal">{order.address || "العنوان الأساسي للعميل"}</strong>
+                      </div>
+                      {order.note && (
+                        <div className="szAddressInfoRow">
+                          <span className="szInfoLabel">ملاحظات التوصيل:</span>
+                          <p className="szDeliveryNote">{order.note}</p>
+                        </div>
+                      )}
+                      <div className="szAddressInfoRow">
+                        <span className="szInfoLabel">رقم هاتف المستلم:</span>
+                        <strong className="szInfoVal">{order.customer?.phone || "مسجل لدى المندوب"}</strong>
+                      </div>
                     </div>
-                    <div className="orderInfoRow">
-                      <span>الهاتف</span>
-                      <strong>{order.customer?.phone || "غير متوفر"}</strong>
-                    </div>
-                    <div className="orderInfoRow">
-                      <span>البريد</span>
-                      <strong>{order.customer?.email || "غير متوفر"}</strong>
+                  </div>
+
+                  {/* Financial Breakdown Card */}
+                  <div className="szFinancialBreakdownCard">
+                    <h3 className="szAsideCardTitle">💰 تفاصيل الفاتورة</h3>
+                    <div className="szSummaryRows">
+                      <div className="szSummaryRow">
+                        <span>مجموع المنتجات</span>
+                        <strong>{itemsTotal.toLocaleString()} ج.س</strong>
+                      </div>
+                      <div className="szSummaryRow">
+                        <span>تكلفة التوصيل</span>
+                        <strong>
+                          {Number(order.total) > itemsTotal
+                            ? `${(Number(order.total) - itemsTotal).toLocaleString()} ج.س`
+                            : "مجاني"}
+                        </strong>
+                      </div>
+                      <div className="szSummaryRow szSummaryRow--total">
+                        <span>الإجمالي الكلي</span>
+                        <strong className="szGrandTotal">
+                          {Number(order.total || 0).toLocaleString()} ج.س
+                        </strong>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          ) : null}
+          )}
         </div>
       </section>
     </main>

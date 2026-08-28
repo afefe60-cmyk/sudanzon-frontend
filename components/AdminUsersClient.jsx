@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiJson } from "../lib/api";
 
 const emptyForm = {
@@ -15,6 +15,13 @@ const emptyForm = {
   description: "",
 };
 
+const roleBadges = {
+  ADMIN: { label: "🛡️ مدير النظام", bg: "#fef2f2", text: "#991b1b" },
+  VENDOR: { label: "🏬 تاجر / بائع", bg: "#ecfdf5", text: "#065f46" },
+  COURIER: { label: "🚚 مندوب توصيل", bg: "#f3e8ff", text: "#6b21a8" },
+  CUSTOMER: { label: "👤 عميل متسوق", bg: "#e0f2fe", text: "#075985" },
+};
+
 export default function AdminUsersClient() {
   const [users, setUsers] = useState([]);
   const [form, setForm] = useState(emptyForm);
@@ -22,6 +29,9 @@ export default function AdminUsersClient() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [token, setToken] = useState("");
+  const [roleFilter, setRoleFilter] = useState("ALL");
+  const [search, setSearch] = useState("");
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const loadUsers = async () => {
     setLoading(true);
@@ -82,20 +92,19 @@ export default function AdminUsersClient() {
         body: JSON.stringify(payload),
       });
 
-      setMessage("تم إنشاء الحساب بنجاح");
+      setMessage("✓ تم إنشاء الحساب بنجاح في المنصة!");
       resetForm();
+      setShowAddModal(false);
       await loadUsers();
     } catch (error) {
-      setMessage(error.message);
+      setMessage(error.message || "تعذر إنشاء الحساب");
     } finally {
       setSaving(false);
     }
   };
 
   const approveVendor = async (user) => {
-    if (!user.vendor || user.vendor.approved) {
-      return;
-    }
+    if (!user.vendor || user.vendor.approved) return;
 
     setMessage("");
     try {
@@ -103,148 +112,332 @@ export default function AdminUsersClient() {
         method: "PATCH",
         headers: { Authorization: `Bearer ${token}` },
       });
-      setMessage("تم اعتماد حساب التاجر بنجاح");
+      setMessage("✓ تم اعتماد متجر التاجر بنجاح");
       await loadUsers();
       window.dispatchEvent(new Event("sudanzon-notifications-updated"));
     } catch (error) {
-      setMessage(error.message);
+      setMessage(error.message || "تعذر اعتماد التاجر");
     }
   };
+
+  const filteredUsers = useMemo(() => {
+    return users.filter((u) => {
+      const matchRole = roleFilter === "ALL" || u.role === roleFilter;
+      const matchSearch =
+        !search ||
+        (u.name && u.name.toLowerCase().includes(search.toLowerCase())) ||
+        (u.email && u.email.toLowerCase().includes(search.toLowerCase())) ||
+        (u.phone && u.phone.includes(search)) ||
+        (u.vendor?.storeName && u.vendor.storeName.toLowerCase().includes(search.toLowerCase()));
+      return matchRole && matchSearch;
+    });
+  }, [users, roleFilter, search]);
 
   const showVendorFields = form.role === "VENDOR";
 
   return (
-    <div className="adminUsersGrid">
-      <form className="cardPanel formPanel" onSubmit={submitForm}>
-        <h3>إنشاء حساب جديد</h3>
-        <p style={{ color: "var(--amazon-muted)", marginTop: 8 }}>
-          أنشئ حساب عميل أو بائع أو مشرف من لوحة واحدة.
-        </p>
-
-        <div className="formRow">
+    <div className="szAdminUsersWrapper">
+      {/* Top Bar with Search & Add Button */}
+      <div className="szAdminFilterBar">
+        <div className="szAdminSearchBox">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
           <input
-            className="input"
-            name="name"
-            value={form.name}
-            onChange={onChange}
-            placeholder="الاسم الكامل"
-            required
-          />
-          <select className="input" name="role" value={form.role} onChange={onChange}>
-            <option value="CUSTOMER">عميل</option>
-            <option value="VENDOR">بائع</option>
-            <option value="ADMIN">مدير</option>
-            <option value="COURIER">مندوب</option>
-          </select>
-        </div>
-
-        <div className="formRow">
-          <input
-            className="input"
-            name="phone"
-            value={form.phone}
-            onChange={onChange}
-            placeholder="رقم الهاتف"
-          />
-          <input
-            className="input"
-            name="email"
-            type="email"
-            value={form.email}
-            onChange={onChange}
-            placeholder="البريد الإلكتروني"
-            required={form.authProvider === "GOOGLE"}
+            type="text"
+            placeholder="ابحث بالاسم، البريد، رقم الهاتف، أو اسم المتجر..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
           />
         </div>
 
-        <div className="formRow">
-          <select className="input" name="authProvider" value={form.authProvider} onChange={onChange}>
-            <option value="LOCAL">تسجيل محلي</option>
-            <option value="GOOGLE">Google</option>
-          </select>
-          <input
-            className="input"
-            name="password"
-            value={form.password}
-            onChange={onChange}
-            type="password"
-            placeholder="كلمة المرور"
-            required={form.authProvider === "LOCAL"}
-          />
-        </div>
+        <div className="szAdminActionsRight">
+          <div className="szAdminRoleFilterTabs">
+            <button
+              type="button"
+              onClick={() => setRoleFilter("ALL")}
+              className={`szRoleFilterBtn ${roleFilter === "ALL" ? "is-active" : ""}`}
+            >
+              الكل ({users.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setRoleFilter("VENDOR")}
+              className={`szRoleFilterBtn ${roleFilter === "VENDOR" ? "is-active" : ""}`}
+            >
+              التجار
+            </button>
+            <button
+              type="button"
+              onClick={() => setRoleFilter("CUSTOMER")}
+              className={`szRoleFilterBtn ${roleFilter === "CUSTOMER" ? "is-active" : ""}`}
+            >
+              العملاء
+            </button>
+            <button
+              type="button"
+              onClick={() => setRoleFilter("COURIER")}
+              className={`szRoleFilterBtn ${roleFilter === "COURIER" ? "is-active" : ""}`}
+            >
+              المناديب
+            </button>
+            <button
+              type="button"
+              onClick={() => setRoleFilter("ADMIN")}
+              className={`szRoleFilterBtn ${roleFilter === "ADMIN" ? "is-active" : ""}`}
+            >
+              المدراء
+            </button>
+          </div>
 
-        {showVendorFields ? (
-          <>
-            <input
-              className="input"
-              name="storeName"
-              value={form.storeName}
-              onChange={onChange}
-              placeholder="اسم المتجر"
-              required
-            />
-            <div className="formRow">
-              <input
-                className="input"
-                name="storeSlug"
-                value={form.storeSlug}
-                onChange={onChange}
-                placeholder="Slug المتجر"
-              />
-              <input
-                className="input"
-                name="description"
-                value={form.description}
-                onChange={onChange}
-                placeholder="وصف المتجر"
-              />
-            </div>
-          </>
-        ) : null}
-
-        <div className="formRow">
-          <button className="primaryBtn" type="submit" disabled={saving}>
-            {saving ? "جاري الإنشاء..." : "إنشاء الحساب"}
+          <button
+            type="button"
+            onClick={() => setShowAddModal(!showAddModal)}
+            className="szAdminAddBtn"
+          >
+            {showAddModal ? "إغلاق النموذج" : "+ إنشاء حساب جديد"}
           </button>
-          <button className="secondaryBtn" type="button" onClick={resetForm}>
-            مسح
-          </button>
-        </div>
-
-        {message ? <p style={{ color: "#1f5f3a", margin: 0 }}>{message}</p> : null}
-      </form>
-
-      <div className="cardPanel">
-        <h3>الحسابات الأخيرة</h3>
-        <p style={{ color: "var(--amazon-muted)", marginTop: 8 }}>
-          راقب الحسابات المنشأة حديثًا وتأكد من توزيع الأدوار بالشكل الصحيح.
-        </p>
-        {loading ? <p>جاري تحميل الحسابات...</p> : null}
-        <div className="adminUsersList">
-          {!loading && users.length === 0 ? <p>لا توجد حسابات بعد.</p> : null}
-          {users.map((user) => (
-            <div className="adminUserRow" key={user.id}>
-              <div>
-                <strong>{user.name}</strong>
-                <p>{user.email || user.phone || "لا يوجد معرف ظاهر"}</p>
-              </div>
-              <div className="adminUserMeta">
-                <span className="amazonMiniTag">{user.role}</span>
-                <span className="amazonMiniTag">{user.authProvider}</span>
-                {user.vendor ? <span className="amazonMiniTag">{user.vendor.storeName}</span> : null}
-                {user.vendor ? (
-                  <span className="amazonMiniTag">{user.vendor.approved ? "معتمد" : "بانتظار الموافقة"}</span>
-                ) : null}
-                {user.vendor && !user.vendor.approved ? (
-                  <button className="primaryBtn" type="button" onClick={() => approveVendor(user)}>
-                    اعتماد التاجر
-                  </button>
-                ) : null}
-              </div>
-            </div>
-          ))}
         </div>
       </div>
+
+      {message && <div className="szAdminAlert">{message}</div>}
+
+      {/* Add User Modal / Form */}
+      {showAddModal && (
+        <form className="szAdminAddUserCard" onSubmit={submitForm}>
+          <div className="szEditorHeader">
+            <h3>👤 إنشاء حساب مستخدم / تاجر / مندوب</h3>
+            <p>املأ بيانات الحساب وحدد الدور والصلاحيات المطلوبة في النظام.</p>
+          </div>
+
+          <div className="szFormGrid2">
+            <div className="szFormGroup">
+              <label className="szFormLabel">الاسم الكامل *</label>
+              <input
+                className="szFormInput"
+                name="name"
+                value={form.name}
+                onChange={onChange}
+                placeholder="مثال: أحمد محمد عثمان"
+                required
+              />
+            </div>
+
+            <div className="szFormGroup">
+              <label className="szFormLabel">الدور والصلاحية *</label>
+              <select className="szFormSelect" name="role" value={form.role} onChange={onChange}>
+                <option value="CUSTOMER">عميل متسوق</option>
+                <option value="VENDOR">بائع / تاجر متجر</option>
+                <option value="COURIER">مندوب توصيل</option>
+                <option value="ADMIN">مدير نظام</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="szFormGrid2">
+            <div className="szFormGroup">
+              <label className="szFormLabel">رقم الهاتف (سوداني)</label>
+              <input
+                className="szFormInput"
+                name="phone"
+                value={form.phone}
+                onChange={onChange}
+                placeholder="0912345678"
+              />
+            </div>
+
+            <div className="szFormGroup">
+              <label className="szFormLabel">البريد الإلكتروني</label>
+              <input
+                className="szFormInput"
+                name="email"
+                type="email"
+                value={form.email}
+                onChange={onChange}
+                placeholder="user@sudanzon.com"
+              />
+            </div>
+          </div>
+
+          <div className="szFormGrid2">
+            <div className="szFormGroup">
+              <label className="szFormLabel">نوع المصادقة</label>
+              <select className="szFormSelect" name="authProvider" value={form.authProvider} onChange={onChange}>
+                <option value="LOCAL">تسجيل وكلمة مرور محلية</option>
+                <option value="GOOGLE">حساب Google</option>
+              </select>
+            </div>
+
+            <div className="szFormGroup">
+              <label className="szFormLabel">كلمة المرور *</label>
+              <input
+                className="szFormInput"
+                name="password"
+                type="password"
+                value={form.password}
+                onChange={onChange}
+                placeholder="••••••••"
+                required={form.authProvider === "LOCAL"}
+              />
+            </div>
+          </div>
+
+          {showVendorFields && (
+            <div className="szVendorExtraFields">
+              <h4 className="szVendorExtraTitle">🏬 بيانات المتجر للتاجر</h4>
+              <div className="szFormGrid2">
+                <div className="szFormGroup">
+                  <label className="szFormLabel">اسم المتجر التجاري *</label>
+                  <input
+                    className="szFormInput"
+                    name="storeName"
+                    value={form.storeName}
+                    onChange={onChange}
+                    placeholder="مثال: متجر الإلكترونيات الحديثة"
+                    required
+                  />
+                </div>
+                <div className="szFormGroup">
+                  <label className="szFormLabel">رابط المتجر (Slug)</label>
+                  <input
+                    className="szFormInput"
+                    name="storeSlug"
+                    value={form.storeSlug}
+                    onChange={onChange}
+                    placeholder="electronics-store"
+                  />
+                </div>
+              </div>
+              <div className="szFormGroup">
+                <label className="szFormLabel">وصف المتجر ونشاطه</label>
+                <textarea
+                  className="szFormTextarea"
+                  name="description"
+                  rows={2}
+                  value={form.description}
+                  onChange={onChange}
+                  placeholder="وصف مختصر للمنتجات التي يقدمها التاجر..."
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="szFormActionButtons">
+            <button className="szSubmitProductBtn" type="submit" disabled={saving}>
+              {saving ? "جارِ إنشاء الحساب..." : "✓ حفظ وإنشاء الحساب"}
+            </button>
+            <button
+              className="szCancelFormBtn"
+              type="button"
+              onClick={() => {
+                resetForm();
+                setShowAddModal(false);
+              }}
+            >
+              إلغاء
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* Users Table Card */}
+      {loading ? (
+        <div className="szAdminLoading">جارِ جلب قائمة المستخدمين...</div>
+      ) : filteredUsers.length === 0 ? (
+        <div className="szAdminEmpty">
+          <span>👥</span>
+          <h3>لا يوجد مستخدمين مطابقين للبحث</h3>
+        </div>
+      ) : (
+        <div className="szOrdersTableCard">
+          <div className="szOrdersTableResponsive">
+            <table className="szAdminTable">
+              <thead>
+                <tr>
+                  <th>المستخدم</th>
+                  <th>بيانات الاتصال</th>
+                  <th>الدور</th>
+                  <th>بيانات المتجر</th>
+                  <th>حالة الاعتماد</th>
+                  <th>إجراءات</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredUsers.map((user) => {
+                  const rBadge = roleBadges[user.role] || {
+                    label: user.role,
+                    bg: "#f1f5f9",
+                    text: "#334155",
+                  };
+
+                  return (
+                    <tr key={user.id}>
+                      <td>
+                        <div className="szUserCell">
+                          <span className="szUserAvatar">
+                            {user.name ? user.name.charAt(0) : "U"}
+                          </span>
+                          <div>
+                            <strong className="szUserName">{user.name || "مستخدم"}</strong>
+                            <small className="szUserProvider">مصادقة: {user.authProvider}</small>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="szContactCell">
+                          <span>{user.email || "بدون بريد"}</span>
+                          <small>{user.phone || "بدون هاتف"}</small>
+                        </div>
+                      </td>
+                      <td>
+                        <span
+                          className="szStatusPill"
+                          style={{ backgroundColor: rBadge.bg, color: rBadge.text }}
+                        >
+                          {rBadge.label}
+                        </span>
+                      </td>
+                      <td>
+                        {user.vendor ? (
+                          <div className="szVendorInfoCell">
+                            <strong>{user.vendor.storeName}</strong>
+                            <small>{user.vendor.storeSlug || "بدون slug"}</small>
+                          </div>
+                        ) : (
+                          <span className="szTextMuted">—</span>
+                        )}
+                      </td>
+                      <td>
+                        {user.vendor ? (
+                          <span className={`szApprovalTag ${user.vendor.approved ? "is-approved" : "is-pending"}`}>
+                            {user.vendor.approved ? "✓ معتمد" : "⏳ قيد المراجعة"}
+                          </span>
+                        ) : (
+                          <span className="szTextMuted">مفعل</span>
+                        )}
+                      </td>
+                      <td>
+                        {user.vendor && !user.vendor.approved ? (
+                          <button
+                            type="button"
+                            onClick={() => approveVendor(user)}
+                            className="szApproveVendorBtn"
+                          >
+                            ✓ اعتماد التاجر
+                          </button>
+                        ) : (
+                          <span className="szTextMuted">نشط</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -5,171 +5,223 @@ import { useEffect, useRef, useState } from "react";
 
 const slides = [
   {
-    badge: "عروض موسمية",
-    title: "عروض قوية لهذا الأسبوع",
-    description: "خصومات مختارة على المنتجات الأكثر طلبًا مع تجربة تصفح سريعة وواضحة على الكمبيوتر والجوال.",
-    image: "/banners/hero-1.svg",
-    ctaPrimary: { label: "تسوق العروض", href: "/products?q=عرض" },
-    ctaSecondary: { label: "منتجات جديدة", href: "/products?sort=new" },
-    stats: [
-      { label: "خصومات", value: "حتى 35%", image: "/icons/discount.svg" },
-      { label: "الدفع", value: "عند الاستلام", image: "/icons/cash.svg" },
-    ],
+    id: 1,
+    tag: "🔥 مهرجان التوفير الأكبر",
+    title: "أقوى عروض الموسم وخصومات حتى 45%",
+    subtitle: "تسوق أفضل الهواتف، العطور الفاخرة، والإلكترونيات مع شحن فوري ودفع عند الاستلام وبنكك.",
+    image: "/banners/hero-1.jpg",
+    ctaPrimary: { label: "تسوق العروض الآن", href: "/products?q=عروض" },
+    ctaSecondary: { label: "وصل حديثاً ✨", href: "/products?sort=new" },
+    badgeText: "خصم يصل 45%",
+    accentColor: "#fbbf24",
   },
   {
-    badge: "منتجات مختارة",
-    title: "أفضل المنتجات تحت نظرة واحدة",
-    description: "بطاقات واضحة للمنتجات المميزة مع إبراز السعر والمخزون، لتسهيل قرار الشراء بسرعة.",
-    image: "/products/electronics.svg",
-    ctaPrimary: { label: "استعرض المنتجات", href: "/products" },
-    ctaSecondary: { label: "الأكثر مبيعًا", href: "/products?sort=popular" },
-    stats: [
-      { label: "المنتجات", value: "إضافة يومية", image: "/icons/product.svg" },
-      { label: "التقييم", value: "مختار بعناية", image: "/icons/rating.svg" },
-    ],
+    id: 2,
+    tag: "⚡ عالم التكنولوجيا والابتكار",
+    title: "أحدث الأجهزة الذكية واللابتوبات الأصلية",
+    subtitle: "اكتشف أحدث الهواتف الذكية والساعات وسماعات الصوت الفاخرة بضمان معتمد وأفضل الأسعار في السوق.",
+    image: "/banners/hero-2.jpg",
+    ctaPrimary: { label: "استكشف الأجهزة", href: "/products?category=إلكترونيات" },
+    ctaSecondary: { label: "تصفح الموبايلات", href: "/products?category=موبايلات" },
+    badgeText: "أجهزة أصلية 100%",
+    accentColor: "#38bdf8",
   },
   {
-    badge: "متاجر مميزة",
-    title: "تجار موثوقون بعرض أقوى",
-    description: "اعرض متاجر البائعين بصورة راقية مع إبراز اسم المتجر والنشاط والعروض الخاصة.",
-    image: "/banners/hero-2.svg",
-    ctaPrimary: { label: "افتح متجرًا", href: "/auth/vendor" },
-    ctaSecondary: { label: "المتاجر", href: "/seller" },
-    stats: [
-      { label: "التجار", value: "داخل المنصة", image: "/icons/store.svg" },
-      { label: "العرض", value: "احترافي", image: "/icons/product.svg" },
-    ],
-  },
-  {
-    badge: "شركاء الخدمة",
-    title: "شحن وتوصيل وشركات موثوقة",
-    description: "مساحة مناسبة لعرض الشركات الداعمة وخدمات التوصيل داخل السودان بشكل أنيق وواضح.",
-    image: "/banners/hero-3.svg",
-    ctaPrimary: { label: "خدمات الشحن", href: "/shipping" },
-    ctaSecondary: { label: "أقسام سريعة", href: "/products" },
-    stats: [
-      { label: "الشحن", value: "حسب المدينة", image: "/icons/shipping.svg" },
-      { label: "الخدمة", value: "سريعة", image: "/icons/cash.svg" },
-    ],
+    id: 3,
+    tag: "👑 الأناقة والعطور الملكية",
+    title: "عطور شرقية فاخرة ومقتنيات مميزة",
+    subtitle: "تشكيلة حصرية من أرقى العطور والعود الملكي والأزياء العصرية لتكتمل إطلالتك في كل مناسبة.",
+    image: "/banners/hero-3.jpg",
+    ctaPrimary: { label: "تسوق العطور", href: "/products?category=عطور" },
+    ctaSecondary: { label: "أزياء وأحذية", href: "/products?category=ملابس" },
+    badgeText: "ثبات وفوحان راقٍ",
+    accentColor: "#f472b6",
   },
 ];
 
 export default function PromoHeroSlider() {
   const [active, setActive] = useState(0);
+  const [progress, setProgress] = useState(0);
   const timerRef = useRef(null);
+  const progressIntervalRef = useRef(null);
+
+  const duration = 6500; // ms per slide
+  const stepTime = 50;
+
+  const resetTimer = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+    setProgress(0);
+
+    const startTime = Date.now();
+    progressIntervalRef.current = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const pct = Math.min(100, (elapsed / duration) * 100);
+      setProgress(pct);
+    }, stepTime);
+
+    timerRef.current = setInterval(() => {
+      setActive((curr) => (curr + 1) % slides.length);
+      setProgress(0);
+    }, duration);
+  };
 
   useEffect(() => {
-    if (slides.length <= 1) return undefined;
-
-    timerRef.current = window.setInterval(() => {
-      setActive((current) => (current + 1) % slides.length);
-    }, 5200);
-
+    resetTimer();
     return () => {
-      if (timerRef.current) window.clearInterval(timerRef.current);
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
     };
-  }, []);
+  }, [active]);
 
-  const goToSlide = (index) => {
-    const normalized = (index + slides.length) % slides.length;
-    setActive(normalized);
+  const goToSlide = (idx) => {
+    setActive((idx + slides.length) % slides.length);
   };
 
   const pause = () => {
-    if (timerRef.current) {
-      window.clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
   };
 
   const resume = () => {
-    if (timerRef.current || slides.length <= 1) return;
-
-    timerRef.current = window.setInterval(() => {
-      setActive((current) => (current + 1) % slides.length);
-    }, 5200);
+    resetTimer();
   };
 
   const slide = slides[active];
 
   return (
-    <section className="noonPromoHeroSliderSection">
-      <div
-        className="noonPromoHeroSlider"
-        onMouseEnter={pause}
-        onMouseLeave={resume}
-        onFocusCapture={pause}
-        onBlurCapture={resume}
-      >
-        <article className="noonPromoHeroSlide">
-          <div className="noonPromoHeroContent">
-            <span className="noonPromoHeroBadge">{slide.badge}</span>
-            <h2>{slide.title}</h2>
-            <p>{slide.description}</p>
-
-            <div className="noonPromoHeroActions">
-              <Link className="noonHeroPrimaryBtn" href={slide.ctaPrimary.href}>
-                {slide.ctaPrimary.label}
-              </Link>
-              <Link className="noonHeroSecondaryBtn" href={slide.ctaSecondary.href}>
-                {slide.ctaSecondary.label}
-              </Link>
+    <section className="szHeroMasterSection">
+      <div className="container">
+        <div className="szHeroMasterGrid">
+          {/* Main Large Slider (70%) */}
+          <div
+            className="szHeroMainSlider"
+            onMouseEnter={pause}
+            onMouseLeave={resume}
+          >
+            <div className="szHeroSlideBgWrap">
+              <img
+                src={slide.image}
+                alt={slide.title}
+                className="szHeroSlideBgImg"
+                key={`bg-${slide.id}`}
+              />
+              <div className="szHeroSlideOverlay" />
             </div>
 
-            <div className="noonPromoHeroStats">
-              {slide.stats.map((item) => (
-                <div className="noonPromoHeroStat" key={`${slide.title}-${item.label}`}>
-                  <div className="noonPromoHeroStatThumb">
-                    <img src={item.image} alt={item.label} />
-                  </div>
-                  <span>{item.label}</span>
-                  <strong>{item.value}</strong>
+            <div className="szHeroSlideContent">
+              <div className="szHeroTopPills">
+                <span className="szHeroPillBadge" style={{ borderColor: slide.accentColor, color: slide.accentColor }}>
+                  {slide.tag}
+                </span>
+                <span className="szHeroDiscountPill">{slide.badgeText}</span>
+              </div>
+
+              <h1 className="szHeroMainHeading">{slide.title}</h1>
+              <p className="szHeroMainSubtitle">{slide.subtitle}</p>
+
+              <div className="szHeroMainActions">
+                <Link className="szHeroCtaPrimary" href={slide.ctaPrimary.href}>
+                  <span>{slide.ctaPrimary.label}</span>
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                  </svg>
+                </Link>
+                <Link className="szHeroCtaSecondary" href={slide.ctaSecondary.href}>
+                  {slide.ctaSecondary.label}
+                </Link>
+              </div>
+
+              {/* Quick Perks Bar */}
+              <div className="szHeroPerks">
+                <div className="szHeroPerk">
+                  <span className="szPerkIcon">🚚</span>
+                  <span>توصيل لكافة المدن</span>
                 </div>
+                <div className="szHeroPerk">
+                  <span className="szPerkIcon">💵</span>
+                  <span>الدفع عند الاستلام وبنكك</span>
+                </div>
+                <div className="szHeroPerk">
+                  <span className="szPerkIcon">🛡️</span>
+                  <span>ضمان استبدال وإرجاع</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Slider Controls */}
+            <button
+              type="button"
+              onClick={() => goToSlide(active - 1)}
+              className="szHeroNavArrow szHeroNavArrow--prev"
+              aria-label="الشريحة السابقة"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              onClick={() => goToSlide(active + 1)}
+              className="szHeroNavArrow szHeroNavArrow--next"
+              aria-label="الشريحة التالية"
+            >
+              ›
+            </button>
+
+            {/* Modern Indicators with Progress */}
+            <div className="szHeroNavIndicators">
+              {slides.map((s, idx) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => goToSlide(idx)}
+                  className={`szHeroTabIndicator ${idx === active ? "is-active" : ""}`}
+                  aria-label={`الانتقال إلى ${s.title}`}
+                >
+                  <span className="szTabNumber">0{idx + 1}</span>
+                  {idx === active && (
+                    <div className="szTabProgressBar">
+                      <div className="szTabProgressFill" style={{ width: `${progress}%` }} />
+                    </div>
+                  )}
+                </button>
               ))}
             </div>
           </div>
 
-          <div className="noonPromoHeroVisual">
-            <div className="noonPromoHeroVisualFrame">
-              <img src={slide.image} alt={slide.title} />
-            </div>
-            <div className="noonPromoHeroSideCards">
-              <div className="noonPromoHeroSideCard is-highlight">
-                <div className="noonPromoHeroSideCardThumb">
-                  <img src="/icons/store.svg" alt="" aria-hidden="true" />
-                </div>
-                <span>سودان زون</span>
-                <strong>واجهة جاهزة للعرض التجاري الاحترافي</strong>
+          {/* Side Highlights Column (30%) */}
+          <aside className="szHeroSideDeals">
+            {/* Side Card 1 */}
+            <Link href="/products?category=أحذية" className="szSideDealCard szSideDealCard--gold">
+              <div className="szSideCardImageWrap">
+                <img src="/banners/side-1.jpg" alt="عروض الأحذية الرياضية" />
+                <span className="szSideBadge">خصم 35%</span>
               </div>
-              <div className="noonPromoHeroSideCard">
-                <div className="noonPromoHeroSideCardThumb">
-                  <img src="/icons/product.svg" alt="" aria-hidden="true" />
+              <div className="szSideCardBody">
+                <span className="szSideSuperTag">صفقة اليوم السريعة 🔥</span>
+                <strong className="szSideTitle">أحذية رياضية وسنيكرز أصلية</strong>
+                <div className="szSideActionRow">
+                  <span className="szSidePrice">تبدأ من 27,000 ج.س</span>
+                  <span className="szSideLinkText">تسوق الآن ❯</span>
                 </div>
-                <span>الصفحة الرئيسية</span>
-                <strong>مساحة مناسبة للإعلانات والهوية التجارية</strong>
               </div>
-            </div>
-          </div>
-        </article>
+            </Link>
 
-        <button className="noonPromoHeroArrow is-prev" type="button" onClick={() => goToSlide(active - 1)} aria-label="الشريحة السابقة">
-          ‹
-        </button>
-        <button className="noonPromoHeroArrow is-next" type="button" onClick={() => goToSlide(active + 1)} aria-label="الشريحة التالية">
-          ›
-        </button>
-
-        <div className="noonPromoHeroDots" role="tablist" aria-label="شرائح الهيرو">
-          {slides.map((item, index) => (
-            <button
-              key={item.title}
-              type="button"
-              className={`noonPromoHeroDot ${index === active ? "is-active" : ""}`}
-              onClick={() => goToSlide(index)}
-              aria-label={`الانتقال إلى ${item.title}`}
-              aria-pressed={index === active}
-            />
-          ))}
+            {/* Side Card 2 */}
+            <Link href="/products?category=إلكترونيات" className="szSideDealCard szSideDealCard--tech">
+              <div className="szSideCardImageWrap">
+                <img src="/banners/side-2.jpg" alt="ساعات ذكية وإلكترونيات" />
+                <span className="szSideBadge szSideBadge--blue">جديد</span>
+              </div>
+              <div className="szSideCardBody">
+                <span className="szSideSuperTag">الأكثر طلباً ⚡</span>
+                <strong className="szSideTitle">ساعات ذكية وملحقات هواتف</strong>
+                <div className="szSideActionRow">
+                  <span className="szSidePrice">تبدأ من 18,500 ج.س</span>
+                  <span className="szSideLinkText">استكشف ❯</span>
+                </div>
+              </div>
+            </Link>
+          </aside>
         </div>
       </div>
     </section>
