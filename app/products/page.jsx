@@ -17,6 +17,8 @@ const categoryIconMap = {
   "قطع غيار السيارات": "🏎️",
 };
 
+import { matchesProductSmartly } from "../../lib/arabic-search";
+
 async function loadProducts(filters = {}) {
   const q = filters.q?.trim();
   const category = filters.category?.trim();
@@ -35,19 +37,24 @@ async function loadProducts(filters = {}) {
       apiJson("/api/products/categories"),
     ]);
 
+    let products = productsResult.items || [];
+
+    // Additional smart filter if needed
+    if (q && products.length === 0) {
+      const allResult = await apiJson("/api/products");
+      const allItems = allResult.items || [];
+      products = allItems.filter((p) => matchesProductSmartly(p, q));
+    }
+
     return {
-      products: productsResult.items || [],
+      products,
       categories: (categoriesResult.items || []).map((item) => item.name || item),
     };
   } catch {
-    const lowerQuery = q?.toLowerCase() || "";
     const lowerCategory = category?.toLowerCase() || "";
 
     let items = fallbackProducts.filter((product) => {
-      const matchesQuery =
-        !lowerQuery ||
-        product.name.toLowerCase().includes(lowerQuery) ||
-        product.description.toLowerCase().includes(lowerQuery);
+      const matchesQuery = matchesProductSmartly(product, q);
       const matchesCategory =
         !lowerCategory || String(product.category).toLowerCase().includes(lowerCategory);
       return matchesQuery && matchesCategory;
