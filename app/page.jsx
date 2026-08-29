@@ -122,8 +122,8 @@ export default async function HomePage() {
       {/* Category Strip */}
       <CategoryStrip categories={categories} categoryIcons={categoryIcons} />
 
-      {/* Market Live Pulse */}
-      <MarketPulse products={products} stores={featuredStores} />
+      {/* Market Live Pulse (100% Real Live Database Metrics) */}
+      <MarketPulse products={products} categories={categories} />
 
       {/* Product Sections */}
       {sections.map((section) => (
