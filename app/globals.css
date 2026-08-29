@@ -11167,4 +11167,33 @@ select {
   }
 }
 
+/* ==========================================================================
+   SudanZon Global Web Splash Screen
+   ========================================================================== */
+#szSiteSplash.szSplashOverlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 99999999 !important;
+  background: #090d16 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  direction: rtl !important;
+  opacity: 1;
+  transform: scale(1);
+  visibility: visible;
+  transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+              visibility 0.6s ease !important;
+}
+
+#szSiteSplash.szSplashOverlay--fadeOut {
+  opacity: 0 !important;
+  transform: scale(1.05) !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+
 
