@@ -40,6 +40,22 @@ export default function GoogleAuthButton({
             if (typeof window !== "undefined") {
               localStorage.setItem("sudanzonToken", result.token);
               localStorage.setItem("sudanzonUser", JSON.stringify(result.user));
+
+              // Bridge to Android App if opened in WebView
+              if (window.AndroidBridge && typeof window.AndroidBridge.onGoogleLoginSuccess === "function") {
+                window.AndroidBridge.onGoogleLoginSuccess(result.token, JSON.stringify(result.user));
+                return;
+              }
+
+              // Deep link fallback for external browser redirect back to Android
+              const userParam = encodeURIComponent(JSON.stringify(result.user));
+              const deepLink = `sudanzon://oauth?token=${result.token}&user=${userParam}`;
+              
+              // If query param ?app=android is present, trigger deep link
+              if (window.location.search.includes("app=android")) {
+                window.location.href = deepLink;
+                return;
+              }
             }
 
             window.dispatchEvent(new Event("sudanzon-user-updated"));
