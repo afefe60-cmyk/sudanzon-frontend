@@ -5,12 +5,13 @@ import SiteHeader from "../../components/SiteHeader";
 import ProtectedPanel from "../../components/ProtectedPanel";
 import AdminOrdersClient from "../../components/AdminOrdersClient";
 import AdminUsersClient from "../../components/AdminUsersClient";
+import AdminVendorsClient from "../../components/AdminVendorsClient";
 import AdminCategoriesClient from "../../components/AdminCategoriesClient";
 import AdminProductsClient from "../../components/AdminProductsClient";
 import RoleGate from "../../components/RoleGate";
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState("orders"); // 'orders' | 'users' | 'categories' | 'products'
+  const [activeTab, setActiveTab] = useState("orders"); // 'orders' | 'users' | 'vendors' | 'products' | 'categories'
 
   return (
     <main className="szPageShell">
@@ -25,7 +26,7 @@ export default function AdminPage() {
                 <span className="szDashboardBadge">🛡️ مركز الإدارة والتحكم التنفيذي</span>
                 <h1 className="szAdminDashboardTitle">لوحة الإدارة العامة لمنصة SudanZon</h1>
                 <p className="szAdminDashboardSubtitle">
-                  مراقبة فورية للمبيعات، إدارة المتاجر والمناديب، وتتبع كافة شحنات وطلبات المنصة.
+                  مراقبة فورية للمبيعات، إدارة وتخصيص المتاجر، التحكم بالمستخدمين والمنتجات، وتتبع كافة الشحنات.
                 </p>
               </div>
 
@@ -137,17 +138,24 @@ export default function AdminPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setActiveTab("categories")}
-                  className={`szAdminTabBtn ${activeTab === "categories" ? "is-active" : ""}`}
+                  onClick={() => setActiveTab("vendors")}
+                  className={`szAdminTabBtn ${activeTab === "vendors" ? "is-active" : ""}`}
                 >
-                  <span>🏷️ الأقسام والتصنيفات</span>
+                  <span>🏬 إدارة وتخصيص المتاجر</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab("products")}
                   className={`szAdminTabBtn ${activeTab === "products" ? "is-active" : ""}`}
                 >
-                  <span>🛍️ الرقابة على المنتجات</span>
+                  <span>🛍️ المنتجات والمخزون</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("categories")}
+                  className={`szAdminTabBtn ${activeTab === "categories" ? "is-active" : ""}`}
+                >
+                  <span>🏷️ الأقسام والتصنيفات</span>
                 </button>
               </div>
 
@@ -155,8 +163,9 @@ export default function AdminPage() {
               <div className="szAdminTabContent">
                 {activeTab === "orders" && <AdminOrdersClient />}
                 {activeTab === "users" && <AdminUsersClient />}
-                {activeTab === "categories" && <AdminCategoriesClient />}
+                {activeTab === "vendors" && <AdminVendorsClient />}
                 {activeTab === "products" && <AdminProductsClient />}
+                {activeTab === "categories" && <AdminCategoriesClient />}
               </div>
             </div>
           </RoleGate>
