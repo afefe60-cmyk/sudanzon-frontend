@@ -1,5 +1,6 @@
 import { Tajawal } from "next/font/google";
 import "./globals.css";
+import SiteSplashScreen from "../components/SiteSplashScreen";
 
 const tajawal = Tajawal({
   subsets: ["arabic", "latin"],
@@ -21,7 +22,10 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="ar" dir="rtl" className={tajawal.variable}>
-      <body className={tajawal.className}>{children}</body>
+      <body className={tajawal.className}>
+        <SiteSplashScreen />
+        {children}
+      </body>
     </html>
   );
 }
