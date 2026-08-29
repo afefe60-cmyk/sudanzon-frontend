@@ -10,9 +10,13 @@ const emptyForm = {
   password: "",
   role: "CUSTOMER",
   authProvider: "LOCAL",
+  city: "",
+  shippingAddress: "",
+  alternatePhone: "",
   storeName: "",
   storeSlug: "",
   description: "",
+  approved: true,
 };
 
 const roleBadges = {
@@ -32,6 +36,7 @@ export default function AdminUsersClient() {
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [search, setSearch] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingUserId, setEditingUserId] = useState(null);
 
   const loadUsers = async () => {
     setLoading(true);
@@ -58,11 +63,38 @@ export default function AdminUsersClient() {
   }, [token]);
 
   const onChange = (event) => {
-    const { name, value } = event.target;
-    setForm((current) => ({ ...current, [name]: value }));
+    const { name, value, type, checked } = event.target;
+    setForm((current) => ({
+      ...current,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
 
-  const resetForm = () => setForm(emptyForm);
+  const resetForm = () => {
+    setForm(emptyForm);
+    setEditingUserId(null);
+    setShowAddModal(false);
+  };
+
+  const startEditUser = (user) => {
+    setEditingUserId(user.id);
+    setForm({
+      name: user.name || "",
+      phone: user.phone || "",
+      email: user.email || "",
+      password: "",
+      role: user.role || "CUSTOMER",
+      authProvider: user.authProvider || "LOCAL",
+      city: user.city || "",
+      shippingAddress: user.shippingAddress || "",
+      alternatePhone: user.alternatePhone || "",
+      storeName: user.vendor?.storeName || "",
+      storeSlug: user.vendor?.storeSlug || "",
+      description: user.vendor?.description || "",
+      approved: user.vendor ? Boolean(user.vendor.approved) : true,
+    });
+    setShowAddModal(true);
+  };
 
   const submitForm = async (event) => {
     event.preventDefault();
@@ -82,24 +114,50 @@ export default function AdminUsersClient() {
       storeName: form.storeName.trim() || null,
       storeSlug: form.storeSlug.trim() || null,
       description: form.description.trim() || null,
-      password: form.authProvider === "LOCAL" ? form.password : null,
+      password: form.password.trim() || undefined,
     };
 
     try {
-      await apiJson("/api/admin/users", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: JSON.stringify(payload),
-      });
+      if (editingUserId) {
+        await apiJson(`/api/admin/users/${editingUserId}`, {
+          method: "PUT",
+          headers: { Authorization: `Bearer ${token}` },
+          body: JSON.stringify(payload),
+        });
+        setMessage("✓ تم تحديث بيانات المستخدم والمتجر بنجاح!");
+      } else {
+        await apiJson("/api/admin/users", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: JSON.stringify(payload),
+        });
+        setMessage("✓ تم إنشاء الحساب بنجاح في المنصة!");
+      }
 
-      setMessage("✓ تم إنشاء الحساب بنجاح في المنصة!");
       resetForm();
-      setShowAddModal(false);
       await loadUsers();
     } catch (error) {
-      setMessage(error.message || "تعذر إنشاء الحساب");
+      setMessage(error.message || "تعذر حفظ بيانات الحساب");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const deleteUser = async (user) => {
+    if (!confirm(`هل أنت متأكد من حذف الحساب "${user.name}" نهائياً من المنصة مع كافة متاجره وبياناته؟`)) {
+      return;
+    }
+
+    setMessage("");
+    try {
+      await apiJson(`/api/admin/users/${user.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setMessage("✓ تم حذف المستخدم والمتجر بنجاح من المنصة");
+      await loadUsers();
+    } catch (error) {
+      setMessage(error.message || "تعذر حذف المستخدم");
     }
   };
 
@@ -133,7 +191,7 @@ export default function AdminUsersClient() {
     });
   }, [users, roleFilter, search]);
 
-  const showVendorFields = form.role === "VENDOR";
+  const showVendorFields = form.role === "VENDOR" || Boolean(form.storeName);
 
   return (
     <div className="szAdminUsersWrapper">
@@ -166,14 +224,14 @@ export default function AdminUsersClient() {
               onClick={() => setRoleFilter("VENDOR")}
               className={`szRoleFilterBtn ${roleFilter === "VENDOR" ? "is-active" : ""}`}
             >
-              التجار
+              التجار ({users.filter((u) => u.role === "VENDOR").length})
             </button>
             <button
               type="button"
               onClick={() => setRoleFilter("CUSTOMER")}
               className={`szRoleFilterBtn ${roleFilter === "CUSTOMER" ? "is-active" : ""}`}
             >
-              العملاء
+              العملاء ({users.filter((u) => u.role === "CUSTOMER").length})
             </button>
             <button
               type="button"
@@ -193,7 +251,15 @@ export default function AdminUsersClient() {
 
           <button
             type="button"
-            onClick={() => setShowAddModal(!showAddModal)}
+            onClick={() => {
+              if (showAddModal) {
+                resetForm();
+              } else {
+                setEditingUserId(null);
+                setForm(emptyForm);
+                setShowAddModal(true);
+              }
+            }}
             className="szAdminAddBtn"
           >
             {showAddModal ? "إغلاق النموذج" : "+ إنشاء حساب جديد"}
@@ -203,12 +269,12 @@ export default function AdminUsersClient() {
 
       {message && <div className="szAdminAlert">{message}</div>}
 
-      {/* Add User Modal / Form */}
+      {/* Add / Edit User Modal */}
       {showAddModal && (
         <form className="szAdminAddUserCard" onSubmit={submitForm}>
           <div className="szEditorHeader">
-            <h3>👤 إنشاء حساب مستخدم / تاجر / مندوب</h3>
-            <p>املأ بيانات الحساب وحدد الدور والصلاحيات المطلوبة في النظام.</p>
+            <h3>{editingUserId ? "✏️ تعديل بيانات المستخدم وتخصيص المتجر" : "👤 إنشاء حساب مستخدم / تاجر / مندوب جديد"}</h3>
+            <p>يمكنك تعديل الصلاحيات، كلمة المرور، أو تخصيص متجر كامل لأي مستخدم.</p>
           </div>
 
           <div className="szFormGrid2">
@@ -227,10 +293,10 @@ export default function AdminUsersClient() {
             <div className="szFormGroup">
               <label className="szFormLabel">الدور والصلاحية *</label>
               <select className="szFormSelect" name="role" value={form.role} onChange={onChange}>
-                <option value="CUSTOMER">عميل متسوق</option>
-                <option value="VENDOR">بائع / تاجر متجر</option>
-                <option value="COURIER">مندوب توصيل</option>
-                <option value="ADMIN">مدير نظام</option>
+                <option value="CUSTOMER">👤 عميل متسوق</option>
+                <option value="VENDOR">🏬 بائع / تاجر متجر</option>
+                <option value="COURIER">🚚 مندوب توصيل</option>
+                <option value="ADMIN">🛡️ مدير نظام بصلاحيات كاملة</option>
               </select>
             </div>
           </div>
@@ -262,15 +328,20 @@ export default function AdminUsersClient() {
 
           <div className="szFormGrid2">
             <div className="szFormGroup">
-              <label className="szFormLabel">نوع المصادقة</label>
-              <select className="szFormSelect" name="authProvider" value={form.authProvider} onChange={onChange}>
-                <option value="LOCAL">تسجيل وكلمة مرور محلية</option>
-                <option value="GOOGLE">حساب Google</option>
-              </select>
+              <label className="szFormLabel">المدينة / الولاية</label>
+              <input
+                className="szFormInput"
+                name="city"
+                value={form.city}
+                onChange={onChange}
+                placeholder="مثال: بورتسودان، الخرطوم، عطبرة"
+              />
             </div>
 
             <div className="szFormGroup">
-              <label className="szFormLabel">كلمة المرور *</label>
+              <label className="szFormLabel">
+                {editingUserId ? "تغيير كلمة المرور (اتركها فارغة للإبقاء على الحالية)" : "كلمة المرور *"}
+              </label>
               <input
                 className="szFormInput"
                 name="password"
@@ -278,14 +349,27 @@ export default function AdminUsersClient() {
                 value={form.password}
                 onChange={onChange}
                 placeholder="••••••••"
-                required={form.authProvider === "LOCAL"}
+                required={!editingUserId && form.authProvider === "LOCAL"}
               />
             </div>
           </div>
 
+          {/* Store / Vendor Customization Block */}
           {showVendorFields && (
             <div className="szVendorExtraFields">
-              <h4 className="szVendorExtraTitle">🏬 بيانات المتجر للتاجر</h4>
+              <div className="szVendorExtraHeader">
+                <h4 className="szVendorExtraTitle">🏬 تخصيص وإدارة متجر التاجر</h4>
+                <label className="szToggleLabel">
+                  <input
+                    type="checkbox"
+                    name="approved"
+                    checked={form.approved}
+                    onChange={onChange}
+                  />
+                  <span>متجر معتمد ومفعل للبيع الفوري</span>
+                </label>
+              </div>
+
               <div className="szFormGrid2">
                 <div className="szFormGroup">
                   <label className="szFormLabel">اسم المتجر التجاري *</label>
@@ -295,7 +379,7 @@ export default function AdminUsersClient() {
                     value={form.storeName}
                     onChange={onChange}
                     placeholder="مثال: متجر الإلكترونيات الحديثة"
-                    required
+                    required={form.role === "VENDOR"}
                   />
                 </div>
                 <div className="szFormGroup">
@@ -305,19 +389,19 @@ export default function AdminUsersClient() {
                     name="storeSlug"
                     value={form.storeSlug}
                     onChange={onChange}
-                    placeholder="electronics-store"
+                    placeholder="modern-electronics"
                   />
                 </div>
               </div>
               <div className="szFormGroup">
-                <label className="szFormLabel">وصف المتجر ونشاطه</label>
+                <label className="szFormLabel">نبذة ووصف المتجر</label>
                 <textarea
                   className="szFormTextarea"
                   name="description"
                   rows={2}
                   value={form.description}
                   onChange={onChange}
-                  placeholder="وصف مختصر للمنتجات التي يقدمها التاجر..."
+                  placeholder="وصف وتخصص المتجر والمنتجات التي يقدمها..."
                 />
               </div>
             </div>
@@ -325,15 +409,12 @@ export default function AdminUsersClient() {
 
           <div className="szFormActionButtons">
             <button className="szSubmitProductBtn" type="submit" disabled={saving}>
-              {saving ? "جارِ إنشاء الحساب..." : "✓ حفظ وإنشاء الحساب"}
+              {saving ? "جارِ الحفظ..." : editingUserId ? "✓ حفظ التعديلات" : "✓ إنشاء الحساب"}
             </button>
             <button
               className="szCancelFormBtn"
               type="button"
-              onClick={() => {
-                resetForm();
-                setShowAddModal(false);
-              }}
+              onClick={resetForm}
             >
               إلغاء
             </button>
@@ -360,7 +441,7 @@ export default function AdminUsersClient() {
                   <th>الدور</th>
                   <th>بيانات المتجر</th>
                   <th>حالة الاعتماد</th>
-                  <th>إجراءات</th>
+                  <th>إجراءات الإدارة</th>
                 </tr>
               </thead>
               <tbody>
@@ -380,7 +461,9 @@ export default function AdminUsersClient() {
                           </span>
                           <div>
                             <strong className="szUserName">{user.name || "مستخدم"}</strong>
-                            <small className="szUserProvider">مصادقة: {user.authProvider}</small>
+                            <small className="szUserProvider">
+                              {user.city ? `📍 ${user.city}` : `مصادقة: ${user.authProvider}`}
+                            </small>
                           </div>
                         </div>
                       </td>
@@ -402,7 +485,11 @@ export default function AdminUsersClient() {
                         {user.vendor ? (
                           <div className="szVendorInfoCell">
                             <strong>{user.vendor.storeName}</strong>
-                            <small>{user.vendor.storeSlug || "بدون slug"}</small>
+                            <small>
+                              {user.vendor.productsCount !== undefined
+                                ? `📦 ${user.vendor.productsCount} منتج`
+                                : user.vendor.storeSlug}
+                            </small>
                           </div>
                         ) : (
                           <span className="szTextMuted">—</span>
@@ -418,17 +505,34 @@ export default function AdminUsersClient() {
                         )}
                       </td>
                       <td>
-                        {user.vendor && !user.vendor.approved ? (
+                        <div className="szCatCardBtns">
+                          {user.vendor && !user.vendor.approved && (
+                            <button
+                              type="button"
+                              onClick={() => approveVendor(user)}
+                              className="szApproveVendorBtn"
+                              title="اعتماد فوري"
+                            >
+                              ✓ اعتماد
+                            </button>
+                          )}
                           <button
                             type="button"
-                            onClick={() => approveVendor(user)}
-                            className="szApproveVendorBtn"
+                            onClick={() => startEditUser(user)}
+                            className="szCatMiniBtn szCatMiniBtn--edit"
+                            title="تعديل المستخدم والمتجر"
                           >
-                            ✓ اعتماد التاجر
+                            تعديل
                           </button>
-                        ) : (
-                          <span className="szTextMuted">نشط</span>
-                        )}
+                          <button
+                            type="button"
+                            onClick={() => deleteUser(user)}
+                            className="szCatMiniBtn szCatMiniBtn--delete"
+                            title="حذف الحساب"
+                          >
+                            حذف
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

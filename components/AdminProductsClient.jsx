@@ -15,11 +15,13 @@ const emptyForm = {
   stock: "",
   categoryId: "",
   categoryName: "",
+  vendorId: "",
 };
 
 export default function AdminProductsClient() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [vendors, setVendors] = useState([]);
   const [form, setForm] = useState(emptyForm);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
@@ -28,7 +30,9 @@ export default function AdminProductsClient() {
   const [productImageFiles, setProductImageFiles] = useState([]);
   const [search, setSearch] = useState("");
   const [selectedCat, setSelectedCat] = useState("ALL");
-  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedVendorFilter, setSelectedVendorFilter] = useState("ALL");
+  const [showModal, setShowModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   const getToken = () => (typeof window === "undefined" ? "" : localStorage.getItem("sudanzonToken") || "");
 
@@ -56,9 +60,21 @@ export default function AdminProductsClient() {
     }
   };
 
+  const loadVendors = async () => {
+    try {
+      const result = await apiJson("/api/admin/vendors", {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      setVendors(result.items || []);
+    } catch (error) {
+      // ignore
+    }
+  };
+
   useEffect(() => {
     loadProducts();
     loadCategories();
+    loadVendors();
   }, []);
 
   const onChange = (event) => {
@@ -82,10 +98,20 @@ export default function AdminProductsClient() {
     setForm(emptyForm);
     setImagePreviews([]);
     setProductImageFiles([]);
-    setShowEditModal(false);
+    setIsEditing(false);
+    setShowModal(false);
+  };
+
+  const startCreateProduct = () => {
+    setForm(emptyForm);
+    setImagePreviews([]);
+    setProductImageFiles([]);
+    setIsEditing(false);
+    setShowModal(true);
   };
 
   const editProduct = (product) => {
+    setIsEditing(true);
     setForm({
       id: product.id,
       name: product.name || "",
@@ -96,19 +122,15 @@ export default function AdminProductsClient() {
       stock: String(product.stock ?? ""),
       categoryId: product.category?.id || "",
       categoryName: product.category?.name || "",
+      vendorId: product.vendor?.id || "",
     });
     setImagePreviews(getProductImages(product));
     setProductImageFiles([]);
-    setShowEditModal(true);
+    setShowModal(true);
   };
 
   const submitForm = async (event) => {
     event.preventDefault();
-    if (!form.id) {
-      setMessage("اختر منتجاً من القائمة أولاً للتعديل.");
-      return;
-    }
-
     setSaving(true);
     setMessage("");
 
@@ -119,6 +141,9 @@ export default function AdminProductsClient() {
     payload.append("stock", String(Number(form.stock || 0)));
     payload.append("categoryId", form.categoryId);
     payload.append("categoryName", form.categoryName.trim());
+    if (form.vendorId) {
+      payload.append("vendorId", form.vendorId);
+    }
 
     if (productImageFiles.length) {
       productImageFiles.forEach((file) => payload.append("imageFiles", file));
@@ -128,17 +153,28 @@ export default function AdminProductsClient() {
     }
 
     try {
-      await apiForm(`/api/products/${form.id}`, payload, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${getToken()}`,
-        },
-      });
-      setMessage("✓ تم تحديث المنتج بنجاح");
+      if (isEditing) {
+        await apiForm(`/api/products/${form.id}`, payload, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+          },
+        });
+        setMessage("✓ تم تحديث المنتج بنجاح");
+      } else {
+        await apiForm("/api/products", payload, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+          },
+        });
+        setMessage("✓ تم إضافة المنتج الجديد بنجاح إلى المنصة!");
+      }
+
       resetForm();
       await loadProducts();
     } catch (error) {
-      setMessage(error.message || "تعذر تحديث المنتج");
+      setMessage(error.message || "تعذر حفظ المنتج");
     } finally {
       setSaving(false);
     }
@@ -167,13 +203,14 @@ export default function AdminProductsClient() {
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
       const matchCat = selectedCat === "ALL" || (p.category?.name || p.category) === selectedCat;
+      const matchVendor = selectedVendorFilter === "ALL" || p.vendor?.id === selectedVendorFilter;
       const matchSearch =
         !search ||
         p.name.toLowerCase().includes(search.toLowerCase()) ||
         (p.vendor?.storeName && p.vendor.storeName.toLowerCase().includes(search.toLowerCase()));
-      return matchCat && matchSearch;
+      return matchCat && matchVendor && matchSearch;
     });
-  }, [products, selectedCat, search]);
+  }, [products, selectedCat, selectedVendorFilter, search]);
 
   return (
     <div className="szAdminProductsWrapper">
@@ -186,7 +223,7 @@ export default function AdminProductsClient() {
           </svg>
           <input
             type="text"
-            placeholder="بحث بالاسم أو اسم المتجر التابع له..."
+            placeholder="بحث باسم المنتج أو المتجر..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -205,44 +242,87 @@ export default function AdminProductsClient() {
               </option>
             ))}
           </select>
+
+          {vendors.length > 0 && (
+            <select
+              className="szCatalogFilterSelect"
+              value={selectedVendorFilter}
+              onChange={(e) => setSelectedVendorFilter(e.target.value)}
+            >
+              <option value="ALL">جميع المتاجر ({vendors.length})</option>
+              {vendors.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.storeName}
+                </option>
+              ))}
+            </select>
+          )}
+
+          <button
+            type="button"
+            onClick={startCreateProduct}
+            className="szAdminAddBtn"
+          >
+            + إضافة منتج جديد
+          </button>
         </div>
       </div>
 
       {message && <div className="szAdminAlert">{message}</div>}
 
-      {/* Edit Product Modal */}
-      {showEditModal && (
+      {/* Add / Edit Product Modal */}
+      {showModal && (
         <form className="szAdminAddUserCard" onSubmit={submitForm}>
           <div className="szEditorHeader">
-            <h3>✏️ تعديل المنتج الإداري</h3>
-            <p>تعديل بيانات المنتج والمخزون والتصنيف.</p>
+            <h3>{isEditing ? "✏️ تعديل المنتج الإداري" : "🛍️ إضافة منتج جديد لأي متجر"}</h3>
+            <p>يمكنك كمدير إضافة أو تعديل أي منتج وتعيين المتجر التابع له مباشرة.</p>
+          </div>
+
+          <div className="szFormGrid2">
+            <div className="szFormGroup">
+              <label className="szFormLabel">اسم المنتج *</label>
+              <input
+                className="szFormInput"
+                name="name"
+                value={form.name}
+                onChange={onChange}
+                placeholder="مثال: عباية خليجية مطرزة فاخرة"
+                required
+              />
+            </div>
+
+            <div className="szFormGroup">
+              <label className="szFormLabel">المتجر التابع له المنتج *</label>
+              <select
+                className="szFormSelect"
+                name="vendorId"
+                value={form.vendorId}
+                onChange={onChange}
+              >
+                <option value="">متجر المنصة الافتراضي (سودان زون)</option>
+                {vendors.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    🏬 {v.storeName} ({v.owner?.name || "تاجر"})
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="szFormGroup">
-            <label className="szFormLabel">اسم المنتج *</label>
-            <input
-              className="szFormInput"
-              name="name"
-              value={form.name}
-              onChange={onChange}
-              placeholder="اسم المنتج"
-              required
-            />
-          </div>
-
-          <div className="szFormGroup">
-            <label className="szFormLabel">وصف المنتج</label>
+            <label className="szFormLabel">وصف وتفاصيل المنتج *</label>
             <textarea
               className="szFormTextarea"
               name="description"
               value={form.description}
               onChange={onChange}
               rows={3}
+              placeholder="اكتب مواصفات المنتج، الخامة، المميزات، والضمان..."
               required
             />
           </div>
 
-          <div className="szFormGrid2">
+          <div className="szFormGrid3">
             <div className="szFormGroup">
               <label className="szFormLabel">السعر (ج.س) *</label>
               <input
@@ -251,50 +331,75 @@ export default function AdminProductsClient() {
                 type="number"
                 value={form.price}
                 onChange={onChange}
+                placeholder="25000"
                 required
               />
             </div>
             <div className="szFormGroup">
-              <label className="szFormLabel">المخزون *</label>
+              <label className="szFormLabel">الكمية المتوفرة بالمخزون *</label>
               <input
                 className="szFormInput"
                 name="stock"
                 type="number"
                 value={form.stock}
                 onChange={onChange}
+                placeholder="10"
                 required
               />
             </div>
+            <div className="szFormGroup">
+              <label className="szFormLabel">القسم / التصنيف *</label>
+              <select
+                className="szFormSelect"
+                name="categoryId"
+                value={form.categoryId}
+                onChange={(event) => {
+                  const category = categories.find((item) => item.id === event.target.value);
+                  setForm((current) => ({
+                    ...current,
+                    categoryId: event.target.value,
+                    categoryName: category?.name || "",
+                  }));
+                }}
+                required
+              >
+                <option value="">اختر التصنيف</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
+          {/* Image Upload Block */}
           <div className="szFormGroup">
-            <label className="szFormLabel">التصنيف</label>
-            <select
-              className="szFormSelect"
-              name="categoryId"
-              value={form.categoryId}
-              onChange={(event) => {
-                const category = categories.find((item) => item.id === event.target.value);
-                setForm((current) => ({
-                  ...current,
-                  categoryId: event.target.value,
-                  categoryName: category?.name || "",
-                }));
-              }}
-              required
-            >
-              <option value="">اختر التصنيف</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
+            <label className="szFormLabel">صور المنتج (حتى 4 صور عالية الدقة)</label>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={onImageChange}
+              className="szFormInput"
+            />
+            {imagePreviews.length > 0 && (
+              <div className="szImagePreviewGrid" style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+                {imagePreviews.map((src, i) => (
+                  <img
+                    key={i}
+                    src={src}
+                    alt="معاينة"
+                    style={{ width: 70, height: 70, objectFit: "cover", borderRadius: 8, border: "1px solid #cbd5e1" }}
+                  />
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="szFormActionButtons">
             <button className="szSubmitProductBtn" type="submit" disabled={saving}>
-              {saving ? "جارِ الحفظ..." : "✓ حفظ التعديل"}
+              {saving ? "جارِ الحفظ..." : isEditing ? "✓ حفظ التعديلات" : "✓ إضافة المنتج الآن"}
             </button>
             <button className="szCancelFormBtn" type="button" onClick={resetForm}>
               إلغاء
@@ -322,7 +427,7 @@ export default function AdminProductsClient() {
                   <th>التصنيف</th>
                   <th>السعر</th>
                   <th>المخزون</th>
-                  <th>إجراءات</th>
+                  <th>إجراءات الإدارة</th>
                 </tr>
               </thead>
               <tbody>
@@ -369,6 +474,7 @@ export default function AdminProductsClient() {
                           type="button"
                           onClick={() => editProduct(product)}
                           className="szCatMiniBtn szCatMiniBtn--edit"
+                          title="تعديل المنتج"
                         >
                           تعديل
                         </button>
@@ -376,6 +482,7 @@ export default function AdminProductsClient() {
                           type="button"
                           onClick={() => removeProduct(product)}
                           className="szCatMiniBtn szCatMiniBtn--delete"
+                          title="حذف المنتج"
                         >
                           حذف
                         </button>
