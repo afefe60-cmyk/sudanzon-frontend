@@ -3,7 +3,10 @@ import SiteHeader from "../../../components/SiteHeader";
 import ProductDetailClient from "../../../components/ProductDetailClient";
 import ProductCard from "../../../components/ProductCard";
 import { apiJson } from "../../../lib/api";
+import { getProductImage } from "../../../lib/media";
 import { products as fallbackProducts } from "../../../lib/mock-data";
+
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "https://api.sudanzon.com").replace(/\/+$/, "");
 
 async function loadProduct(id) {
   try {
@@ -34,6 +37,61 @@ function buildSpecs(product) {
     { label: "خيارات الدفع", value: "الدفع عند الاستلام • تطبيق بنكك" },
     { label: "الشحن والتوصيل", value: "سريع ومتاح لكافة مدن وولايات السودان" },
   ];
+}
+
+export async function generateMetadata({ params }) {
+  const product = await loadProduct(params?.id);
+
+  if (!product) {
+    return {
+      title: "منتج على سودان زون | SudanZon",
+      description: "تسوق أفضل العروض والمنتجات الأصلية في السودان على منصة سودان زون.",
+    };
+  }
+
+  const productName = product.name || "منتج فاخر";
+  const priceFormatted = Number(product.price || 0).toLocaleString();
+  const vendorName = product.vendor?.storeName || product.vendor || "سودان زون";
+  const desc =
+    product.description ||
+    `اشترِ ${productName} بسعر ${priceFormatted} ج.س من ${vendorName} عبر منصة سودان زون. شحن سريع لكافة الولايات والدفع عند الاستلام وبنكك.`;
+
+  let imgUrl = getProductImage(product);
+  if (imgUrl && imgUrl.startsWith("/")) {
+    imgUrl = `https://sudanzon.com${imgUrl}`;
+  }
+
+  const canonicalUrl = `https://sudanzon.com/products/${params?.id}`;
+
+  return {
+    title: `${productName} - ${priceFormatted} ج.س | سودان زون (SudanZon)`,
+    description: desc,
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      title: `${productName} | بسعر ${priceFormatted} ج.س على SudanZon`,
+      description: desc,
+      url: canonicalUrl,
+      siteName: "سودان زون | SudanZon",
+      images: [
+        {
+          url: imgUrl,
+          width: 800,
+          height: 800,
+          alt: productName,
+        },
+      ],
+      locale: "ar_SD",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${productName} - ${priceFormatted} ج.س`,
+      description: desc,
+      images: [imgUrl],
+    },
+  };
 }
 
 export default async function ProductPage({ params }) {
