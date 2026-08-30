@@ -37,12 +37,15 @@ export default function SiteSplashScreen() {
 
       <div className="szSplashCenterBox">
         {/* Logo Container with Breathing Ring */}
-        <div className="szSplashLogoWrap">
+        <div className="szSplashLogoWrap" style={{ width: "110px", height: "110px", maxWidth: "110px", maxHeight: "110px", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div className="szSplashPulseRing" />
           <img
             src="/logo.png"
             alt="SudanZon"
             className="szSplashLogoImg"
+            width={96}
+            height={96}
+            style={{ width: "96px", height: "96px", maxWidth: "96px", maxHeight: "96px", objectFit: "contain", display: "block" }}
             onError={(e) => {
               e.currentTarget.src = "/favicon.png";
             }}

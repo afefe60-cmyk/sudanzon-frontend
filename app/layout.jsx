@@ -140,6 +140,15 @@ export default function RootLayout({ children }) {
   return (
     <html lang="ar" dir="rtl" className={tajawal.variable}>
       <head>
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              #szSiteSplash.szSplashOverlay { position: fixed !important; inset: 0 !important; z-index: 99999999 !important; background: #090d16 !important; display: flex !important; align-items: center !important; justify-content: center !important; }
+              .szSplashLogoWrap { width: 110px !important; height: 110px !important; max-width: 110px !important; max-height: 110px !important; }
+              .szSplashLogoImg { width: 96px !important; height: 96px !important; max-width: 96px !important; max-height: 96px !important; object-fit: contain !important; display: block !important; }
+            `,
+          }}
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
