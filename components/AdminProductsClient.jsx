@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { apiForm, apiJson } from "../lib/api";
-import { getProductImage, getProductImages } from "../lib/media";
+import { getProductImage, getProductImages, parseImageList } from "../lib/media";
 
 const emptyForm = {
   id: "",
@@ -112,18 +112,23 @@ export default function AdminProductsClient() {
 
   const editProduct = (product) => {
     setIsEditing(true);
+    const parsedImages = parseImageList(product.images);
+    const currentMainImage = product.image || parsedImages[0] || "";
+    const allImages = parsedImages.length ? parsedImages : currentMainImage ? [currentMainImage] : [];
+
     setForm({
       id: product.id,
       name: product.name || "",
       description: product.description || "",
-      image: product.image || "",
-      images: Array.isArray(product.images) ? product.images : product.image ? [product.image] : [],
+      image: currentMainImage,
+      images: allImages,
       price: String(product.price ?? ""),
       stock: String(product.stock ?? ""),
-      categoryId: product.category?.id || "",
-      categoryName: product.category?.name || "",
-      vendorId: product.vendor?.id || "",
+      categoryId: product.categoryId || product.category?.id || "",
+      categoryName: product.category?.name || (typeof product.category === "string" ? product.category : ""),
+      vendorId: product.vendorId || product.vendor?.id || "",
     });
+
     setImagePreviews(getProductImages(product));
     setProductImageFiles([]);
     setShowModal(true);
