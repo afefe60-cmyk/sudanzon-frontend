@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { apiJson } from "../lib/api";
+import { apiForm, apiJson } from "../lib/api";
 
 const emptyVendorForm = {
   id: "",
@@ -13,6 +13,8 @@ const emptyVendorForm = {
   storeName: "",
   storeSlug: "",
   description: "",
+  logo: "",
+  banner: "",
   approved: true,
   isNewUser: false,
 };
@@ -29,6 +31,8 @@ export default function AdminVendorsClient() {
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [logoFile, setLogoFile] = useState(null);
+  const [logoPreview, setLogoPreview] = useState("");
 
   const loadVendors = async () => {
     setLoading(true);
@@ -51,7 +55,7 @@ export default function AdminVendorsClient() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUsers(result.items || []);
-    } catch (error) {
+    } catch {
       // ignore
     }
   };
@@ -75,20 +79,37 @@ export default function AdminVendorsClient() {
     }));
   };
 
+  const onLogoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setLogoFile(file);
+      setLogoPreview(URL.createObjectURL(file));
+    } else {
+      setLogoFile(null);
+      setLogoPreview(form.logo || "");
+    }
+  };
+
   const resetForm = () => {
     setForm(emptyVendorForm);
+    setLogoFile(null);
+    setLogoPreview("");
     setIsEditing(false);
     setShowModal(false);
   };
 
   const startCreateStore = () => {
     setForm(emptyVendorForm);
+    setLogoFile(null);
+    setLogoPreview("");
     setIsEditing(false);
     setShowModal(true);
   };
 
   const startEditStore = (vendor) => {
     setIsEditing(true);
+    setLogoFile(null);
+    setLogoPreview(vendor.logo || "");
     setForm({
       id: vendor.id,
       userId: vendor.userId || "",
@@ -99,6 +120,8 @@ export default function AdminVendorsClient() {
       storeName: vendor.storeName || "",
       storeSlug: vendor.storeSlug || "",
       description: vendor.description || "",
+      logo: vendor.logo || "",
+      banner: vendor.banner || "",
       approved: Boolean(vendor.approved),
       isNewUser: false,
     });
@@ -112,20 +135,24 @@ export default function AdminVendorsClient() {
 
     try {
       if (isEditing) {
-        await apiJson(`/api/admin/vendors/${form.id}`, {
+        const formData = new FormData();
+        formData.append("storeName", form.storeName.trim());
+        formData.append("storeSlug", form.storeSlug.trim());
+        formData.append("description", form.description.trim());
+        formData.append("approved", String(form.approved));
+        if (logoFile) {
+          formData.append("logoFile", logoFile);
+        } else if (form.logo) {
+          formData.append("logo", form.logo);
+        }
+
+        await apiForm(`/api/admin/vendors/${form.id}`, formData, {
           method: "PUT",
           headers: { Authorization: `Bearer ${token}` },
-          body: JSON.stringify({
-            storeName: form.storeName.trim(),
-            storeSlug: form.storeSlug.trim(),
-            description: form.description.trim(),
-            approved: form.approved,
-          }),
         });
-        setMessage("✓ تم تحديث وتخصيص بيانات المتجر بنجاح!");
+        setMessage("✓ تم تحديث وتخصيص بيانات وصورة المتجر بنجاح!");
       } else {
         if (form.isNewUser) {
-          // Create new vendor user with store
           await apiJson("/api/admin/users", {
             method: "POST",
             headers: { Authorization: `Bearer ${token}` },
@@ -143,7 +170,6 @@ export default function AdminVendorsClient() {
           });
           setMessage("✓ تم إنشاء حساب التاجر وتخصيص المتجر الجديد بنجاح!");
         } else {
-          // Assign store to existing user
           if (!form.userId) {
             setMessage("يرجى اختيار المستخدم المالك للمتجر");
             setSaving(false);
@@ -207,6 +233,13 @@ export default function AdminVendorsClient() {
     });
   }, [vendors, filter, search]);
 
+  const getStoreLogoUrl = (v) => {
+    if (!v.logo) return null;
+    if (v.logo.startsWith("http")) return v.logo;
+    if (v.logo.startsWith("/uploads/")) return `https://api.sudanzon.com${v.logo}`;
+    return v.logo;
+  };
+
   return (
     <div className="szAdminVendorsWrapper">
       {/* Top Filter Bar */}
@@ -265,12 +298,43 @@ export default function AdminVendorsClient() {
       {showModal && (
         <form className="szAdminAddUserCard" onSubmit={submitForm}>
           <div className="szEditorHeader">
-            <h3>{isEditing ? "✏️ تخصيص وتعديل بيانات المتجر" : "🏬 إنشاء وتخصيص متجر جديد"}</h3>
-            <p>يمكنك إنشاء متجر جديد، ربطه بتاجر موجود، أو إنشاء حساب تاجر جديد ومتجر في خطوة واحدة.</p>
+            <h3>{isEditing ? "✏️ تخصيص وتعديل بيانات وصورة المتجر" : "🏬 إنشاء وتخصيص متجر جديد"}</h3>
+            <p>يمكنك تغيير اسم المتجر، رابط الـ Slug، صورة وشعار المتجر، واعتماده للبيع الفوري.</p>
+          </div>
+
+          {/* Store Logo Upload & Preview Box */}
+          <div className="szStoreLogoUploadSection">
+            <div className="szStoreLogoPreviewWrap">
+              {logoPreview ? (
+                <img
+                  src={logoPreview.startsWith("blob:") || logoPreview.startsWith("http") ? logoPreview : `https://api.sudanzon.com${logoPreview}`}
+                  alt="شعار المتجر"
+                  className="szStoreLogoPreviewImg"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
+              ) : (
+                <div className="szStoreLogoPlaceholder">🏬</div>
+              )}
+            </div>
+            <div className="szStoreLogoInputWrap">
+              <label className="szFormLabel">🖼️ صورة وشعار المتجر (Store Logo)</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={onLogoChange}
+                className="szFormInput"
+                style={{ padding: "8px 12px" }}
+              />
+              <small style={{ color: "#64748b", display: "block", marginTop: 4 }}>
+                اختر صورة أو شعار المتجر (JPG, PNG, WEBP) بحد أقصى 4 ميغابايت.
+              </small>
+            </div>
           </div>
 
           {!isEditing && (
-            <div className="szFormGroup" style={{ marginBottom: 16 }}>
+            <div className="szFormGroup" style={{ margin: "16px 0" }}>
               <label className="szFormLabel">مالك المتجر (التاجر)</label>
               <div style={{ display: "flex", gap: 16, marginTop: 6 }}>
                 <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: "0.9rem" }}>
@@ -402,7 +466,7 @@ export default function AdminVendorsClient() {
 
           <div className="szFormActionButtons">
             <button className="szSubmitProductBtn" type="submit" disabled={saving}>
-              {saving ? "جارِ الحفظ..." : isEditing ? "✓ حفظ التعديلات" : "✓ إنشاء وتخصيص المتجر"}
+              {saving ? "جارِ الحفظ..." : isEditing ? "✓ حفظ التعديلات والصورة" : "✓ إنشاء وتخصيص المتجر"}
             </button>
             <button className="szCancelFormBtn" type="button" onClick={resetForm}>
               إلغاء
@@ -425,6 +489,7 @@ export default function AdminVendorsClient() {
             <table className="szAdminTable">
               <thead>
                 <tr>
+                  <th>شعار المتجر</th>
                   <th>المتجر</th>
                   <th>المالك / التاجر</th>
                   <th>رابط المتجر</th>
@@ -434,69 +499,144 @@ export default function AdminVendorsClient() {
                 </tr>
               </thead>
               <tbody>
-                {filteredVendors.map((v) => (
-                  <tr key={v.id}>
-                    <td>
-                      <div className="szVendorStoreCell">
-                        <div className="szVendorStoreIcon">🏬</div>
-                        <div>
-                          <strong className="szVendorStoreName">{v.storeName}</strong>
-                          <small className="szVendorStoreDesc">
-                            {v.description ? v.description.substring(0, 40) + "..." : "متجر معتمد"}
-                          </small>
+                {filteredVendors.map((v) => {
+                  const logoUrl = getStoreLogoUrl(v);
+
+                  return (
+                    <tr key={v.id}>
+                      <td>
+                        <div className="szStoreTableLogo">
+                          {logoUrl ? (
+                            <img
+                              src={logoUrl}
+                              alt={v.storeName}
+                              className="szStoreTableLogoImg"
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                              }}
+                            />
+                          ) : (
+                            <div className="szStoreTableLogoFallback">🏬</div>
+                          )}
                         </div>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="szContactCell">
-                        <strong>{v.owner?.name || "بدون اسم"}</strong>
-                        <small>{v.owner?.phone || v.owner?.email || "—"}</small>
-                      </div>
-                    </td>
-                    <td>
-                      <span className="szStoreSlugPill">
-                        /{v.storeSlug || "store"}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="szQtyBadge">
-                        📦 {v.productsCount || 0} منتج
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`szApprovalTag ${v.approved ? "is-approved" : "is-pending"}`}>
-                        {v.approved ? "✓ معتمد" : "⏳ قيد المراجعة"}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="szCatCardBtns">
-                        {!v.approved && (
+                      </td>
+                      <td>
+                        <div className="szVendorStoreCell">
+                          <div>
+                            <strong className="szVendorStoreName">{v.storeName}</strong>
+                            <small className="szVendorStoreDesc">
+                              {v.description ? v.description.substring(0, 40) + "..." : "متجر معتمد"}
+                            </small>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="szContactCell">
+                          <strong>{v.owner?.name || "بدون اسم"}</strong>
+                          <small>{v.owner?.phone || v.owner?.email || "—"}</small>
+                        </div>
+                      </td>
+                      <td>
+                        <span className="szStoreSlugPill">
+                          /{v.storeSlug || "store"}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="szQtyBadge">
+                          📦 {v.productsCount || 0} منتج
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`szApprovalTag ${v.approved ? "is-approved" : "is-pending"}`}>
+                          {v.approved ? "✓ معتمد" : "⏳ قيد المراجعة"}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="szCatCardBtns">
+                          {!v.approved && (
+                            <button
+                              type="button"
+                              onClick={() => approveVendor(v)}
+                              className="szApproveVendorBtn"
+                              title="اعتماد وتفعيل المتجر"
+                            >
+                              ✓ اعتماد
+                            </button>
+                          )}
                           <button
                             type="button"
-                            onClick={() => approveVendor(v)}
-                            className="szApproveVendorBtn"
-                            title="اعتماد وتفعيل المتجر"
+                            onClick={() => startEditStore(v)}
+                            className="szCatMiniBtn szCatMiniBtn--edit"
+                            title="تخصيص وتعديل بيانات وصورة المتجر"
                           >
-                            ✓ اعتماد
+                            تخصيص
                           </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => startEditStore(v)}
-                          className="szCatMiniBtn szCatMiniBtn--edit"
-                          title="تخصيص وتعديل بيانات المتجر"
-                        >
-                          تخصيص
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </div>
       )}
+
+      <style jsx>{`
+        .szStoreLogoUploadSection {
+          display: flex;
+          align-items: center;
+          gap: 20px;
+          padding: 16px;
+          background: #f8fafc;
+          border-radius: 16px;
+          border: 1px solid #e2e8f0;
+          margin-bottom: 20px;
+        }
+        .szStoreLogoPreviewWrap {
+          width: 72px;
+          height: 72px;
+          border-radius: 16px;
+          background: #ffffff;
+          border: 2px dashed #cbd5e1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+          flex-shrink: 0;
+          box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+        }
+        .szStoreLogoPreviewImg {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        .szStoreLogoPlaceholder {
+          font-size: 2rem;
+        }
+        .szStoreLogoInputWrap {
+          flex: 1;
+        }
+        .szStoreTableLogo {
+          width: 44px;
+          height: 44px;
+          border-radius: 12px;
+          background: #f1f5f9;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+          border: 1px solid #e2e8f0;
+        }
+        .szStoreTableLogoImg {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        .szStoreTableLogoFallback {
+          font-size: 1.3rem;
+        }
+      `}</style>
     </div>
   );
 }
