@@ -9,6 +9,9 @@ const emptyVendorForm = {
   userName: "",
   userEmail: "",
   userPhone: "",
+  userCity: "",
+  userShippingAddress: "",
+  userAlternatePhone: "",
   userPassword: "",
   storeName: "",
   storeSlug: "",
@@ -116,6 +119,9 @@ export default function AdminVendorsClient() {
       userName: vendor.owner?.name || "",
       userEmail: vendor.owner?.email || "",
       userPhone: vendor.owner?.phone || "",
+      userCity: vendor.owner?.city || "",
+      userShippingAddress: vendor.owner?.shippingAddress || "",
+      userAlternatePhone: vendor.owner?.alternatePhone || "",
       userPassword: "",
       storeName: vendor.storeName || "",
       storeSlug: vendor.storeSlug || "",
@@ -140,6 +146,15 @@ export default function AdminVendorsClient() {
         formData.append("storeSlug", form.storeSlug.trim());
         formData.append("description", form.description.trim());
         formData.append("approved", String(form.approved));
+
+        // Merchant Owner details
+        formData.append("userName", form.userName.trim());
+        formData.append("userPhone", form.userPhone.trim());
+        formData.append("userEmail", form.userEmail.trim());
+        formData.append("userCity", form.userCity.trim());
+        formData.append("userShippingAddress", form.userShippingAddress.trim());
+        formData.append("userAlternatePhone", form.userAlternatePhone.trim());
+
         if (logoFile) {
           formData.append("logoFile", logoFile);
         } else if (form.logo) {
@@ -150,7 +165,7 @@ export default function AdminVendorsClient() {
           method: "PUT",
           headers: { Authorization: `Bearer ${token}` },
         });
-        setMessage("✓ تم تحديث وتخصيص بيانات وصورة المتجر بنجاح!");
+        setMessage("✓ تم تحديث وتخصيص بيانات وصورة المتجر ومعلومات التاجر بنجاح!");
       } else {
         if (form.isNewUser) {
           await apiJson("/api/admin/users", {
@@ -160,6 +175,9 @@ export default function AdminVendorsClient() {
               name: form.userName.trim(),
               email: form.userEmail.trim() || undefined,
               phone: form.userPhone.trim() || undefined,
+              city: form.userCity.trim() || undefined,
+              shippingAddress: form.userShippingAddress.trim() || undefined,
+              alternatePhone: form.userAlternatePhone.trim() || undefined,
               password: form.userPassword.trim() || "123456",
               role: "VENDOR",
               storeName: form.storeName.trim(),
@@ -179,6 +197,12 @@ export default function AdminVendorsClient() {
             method: "PUT",
             headers: { Authorization: `Bearer ${token}` },
             body: JSON.stringify({
+              name: form.userName.trim() || undefined,
+              phone: form.userPhone.trim() || undefined,
+              email: form.userEmail.trim() || undefined,
+              city: form.userCity.trim() || undefined,
+              shippingAddress: form.userShippingAddress.trim() || undefined,
+              alternatePhone: form.userAlternatePhone.trim() || undefined,
               role: "VENDOR",
               storeName: form.storeName.trim(),
               storeSlug: form.storeSlug.trim() || undefined,
@@ -227,7 +251,8 @@ export default function AdminVendorsClient() {
         v.storeName.toLowerCase().includes(search.toLowerCase()) ||
         (v.storeSlug && v.storeSlug.toLowerCase().includes(search.toLowerCase())) ||
         (v.owner?.name && v.owner.name.toLowerCase().includes(search.toLowerCase())) ||
-        (v.owner?.phone && v.owner.phone.includes(search));
+        (v.owner?.phone && v.owner.phone.includes(search)) ||
+        (v.owner?.city && v.owner.city.toLowerCase().includes(search.toLowerCase()));
 
       return matchFilter && matchSearch;
     });
@@ -251,7 +276,7 @@ export default function AdminVendorsClient() {
           </svg>
           <input
             type="text"
-            placeholder="ابحث باسم المتجر، الرابط، اسم المالك، أو الهاتف..."
+            placeholder="ابحث باسم المتجر، الرابط، اسم المالك، الهاتف، أو المدينة..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -298,8 +323,8 @@ export default function AdminVendorsClient() {
       {showModal && (
         <form className="szAdminAddUserCard" onSubmit={submitForm}>
           <div className="szEditorHeader">
-            <h3>{isEditing ? "✏️ تخصيص وتعديل بيانات وصورة المتجر" : "🏬 إنشاء وتخصيص متجر جديد"}</h3>
-            <p>يمكنك تغيير اسم المتجر، رابط الـ Slug، صورة وشعار المتجر، واعتماده للبيع الفوري.</p>
+            <h3>{isEditing ? "✏️ تخصيص وتعديل بيانات المتجر والتاجر" : "🏬 إنشاء وتخصيص متجر جديد"}</h3>
+            <p>يمكنك تعديل اسم المتجر، الرابط، الشعار، بيانات التواصل مع التاجر (الهاتف، الإيميل، المدينة، العنوان) وتفعيله للبيع.</p>
           </div>
 
           {/* Store Logo Upload & Preview Box */}
@@ -333,89 +358,7 @@ export default function AdminVendorsClient() {
             </div>
           </div>
 
-          {!isEditing && (
-            <div className="szFormGroup" style={{ margin: "16px 0" }}>
-              <label className="szFormLabel">مالك المتجر (التاجر)</label>
-              <div style={{ display: "flex", gap: 16, marginTop: 6 }}>
-                <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: "0.9rem" }}>
-                  <input
-                    type="radio"
-                    name="isNewUser"
-                    checked={!form.isNewUser}
-                    onChange={() => setForm((c) => ({ ...c, isNewUser: false }))}
-                  />
-                  <span>ربط بمستخدم مسجل حالياً</span>
-                </label>
-                <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: "0.9rem" }}>
-                  <input
-                    type="radio"
-                    name="isNewUser"
-                    checked={form.isNewUser}
-                    onChange={() => setForm((c) => ({ ...c, isNewUser: true }))}
-                  />
-                  <span>إنشاء حساب تاجر جديد بالكامل</span>
-                </label>
-              </div>
-            </div>
-          )}
-
-          {!isEditing && !form.isNewUser && (
-            <div className="szFormGroup" style={{ marginBottom: 16 }}>
-              <label className="szFormLabel">اختر المستخدم المالك *</label>
-              <select
-                className="szFormSelect"
-                name="userId"
-                value={form.userId}
-                onChange={onChange}
-                required
-              >
-                <option value="">-- اختر المستخدم لتحويله لتاجر وتخصيص متجر له --</option>
-                {users.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    👤 {u.name} ({u.email || u.phone || "بدون هاتف"}) - {u.role}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {!isEditing && form.isNewUser && (
-            <div className="szFormGrid3" style={{ marginBottom: 16 }}>
-              <div className="szFormGroup">
-                <label className="szFormLabel">اسم صاحب المتجر *</label>
-                <input
-                  className="szFormInput"
-                  name="userName"
-                  value={form.userName}
-                  onChange={onChange}
-                  placeholder="الاسم الكامل"
-                  required
-                />
-              </div>
-              <div className="szFormGroup">
-                <label className="szFormLabel">رقم الهاتف</label>
-                <input
-                  className="szFormInput"
-                  name="userPhone"
-                  value={form.userPhone}
-                  onChange={onChange}
-                  placeholder="09XXXXXXXX"
-                />
-              </div>
-              <div className="szFormGroup">
-                <label className="szFormLabel">كلمة المرور للحساب</label>
-                <input
-                  className="szFormInput"
-                  name="userPassword"
-                  type="password"
-                  value={form.userPassword}
-                  onChange={onChange}
-                  placeholder="•••••••• (افتراضي: 123456)"
-                />
-              </div>
-            </div>
-          )}
-
+          {/* Store Basic Fields */}
           <div className="szFormGrid2">
             <div className="szFormGroup">
               <label className="szFormLabel">اسم المتجر التجاري *</label>
@@ -424,7 +367,7 @@ export default function AdminVendorsClient() {
                 name="storeName"
                 value={form.storeName}
                 onChange={onChange}
-                placeholder="مثال: متجر النيلين للإلكترونيات"
+                placeholder="مثال: متجر تالا استور"
                 required
               />
             </div>
@@ -435,7 +378,7 @@ export default function AdminVendorsClient() {
                 name="storeSlug"
                 value={form.storeSlug}
                 onChange={onChange}
-                placeholder="alnilin-store"
+                placeholder="tala-store"
               />
             </div>
           </div>
@@ -445,14 +388,165 @@ export default function AdminVendorsClient() {
             <textarea
               className="szFormTextarea"
               name="description"
-              rows={3}
+              rows={2}
               value={form.description}
               onChange={onChange}
               placeholder="وصف تخصص المتجر والمنتجات التي يعرضها..."
             />
           </div>
 
-          <div className="szFormGroup" style={{ marginTop: 10 }}>
+          {/* Merchant Contact & Owner Details Section */}
+          <div className="szMerchantDetailsBox">
+            <h4 className="szMerchantDetailsTitle">
+              👤 بيانات ومعلومات التواصل مع التاجر (صاحب المتجر)
+            </h4>
+
+            {!isEditing && (
+              <div className="szFormGroup" style={{ marginBottom: 14 }}>
+                <label className="szFormLabel">نوع الحساب</label>
+                <div style={{ display: "flex", gap: 16, marginTop: 4 }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: "0.9rem" }}>
+                    <input
+                      type="radio"
+                      name="isNewUser"
+                      checked={!form.isNewUser}
+                      onChange={() => setForm((c) => ({ ...c, isNewUser: false }))}
+                    />
+                    <span>ربط بمستخدم مسجل حالياً</span>
+                  </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: "0.9rem" }}>
+                    <input
+                      type="radio"
+                      name="isNewUser"
+                      checked={form.isNewUser}
+                      onChange={() => setForm((c) => ({ ...c, isNewUser: true }))}
+                    />
+                    <span>إنشاء حساب تاجر جديد بالكامل</span>
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {!isEditing && !form.isNewUser && (
+              <div className="szFormGroup" style={{ marginBottom: 14 }}>
+                <label className="szFormLabel">اختر المستخدم المالك *</label>
+                <select
+                  className="szFormSelect"
+                  name="userId"
+                  value={form.userId}
+                  onChange={(e) => {
+                    const sel = users.find((u) => u.id === e.target.value);
+                    setForm((c) => ({
+                      ...c,
+                      userId: e.target.value,
+                      userName: sel?.name || c.userName,
+                      userPhone: sel?.phone || c.userPhone,
+                      userEmail: sel?.email || c.userEmail,
+                      userCity: sel?.city || c.userCity,
+                      userShippingAddress: sel?.shippingAddress || c.userShippingAddress,
+                    }));
+                  }}
+                  required
+                >
+                  <option value="">-- اختر المستخدم لتحويله لتاجر وتخصيص متجر له --</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      👤 {u.name} ({u.email || u.phone || "بدون هاتف"}) - {u.role}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="szFormGrid3">
+              <div className="szFormGroup">
+                <label className="szFormLabel">اسم صاحب المتجر *</label>
+                <input
+                  className="szFormInput"
+                  name="userName"
+                  value={form.userName}
+                  onChange={onChange}
+                  placeholder="مثال: أحمد محمد"
+                  required
+                />
+              </div>
+
+              <div className="szFormGroup">
+                <label className="szFormLabel">رقم الهاتف (للاتصال والواتساب) *</label>
+                <input
+                  className="szFormInput"
+                  name="userPhone"
+                  value={form.userPhone}
+                  onChange={onChange}
+                  placeholder="0912345678"
+                  required
+                />
+              </div>
+
+              <div className="szFormGroup">
+                <label className="szFormLabel">البريد الإلكتروني للتاجر</label>
+                <input
+                  className="szFormInput"
+                  name="userEmail"
+                  type="email"
+                  value={form.userEmail}
+                  onChange={onChange}
+                  placeholder="vendor@sudanzon.com"
+                />
+              </div>
+            </div>
+
+            <div className="szFormGrid3" style={{ marginTop: 12 }}>
+              <div className="szFormGroup">
+                <label className="szFormLabel">المدينة / الولاية</label>
+                <input
+                  className="szFormInput"
+                  name="userCity"
+                  value={form.userCity}
+                  onChange={onChange}
+                  placeholder="بورتسودان، الخرطوم، عطبرة..."
+                />
+              </div>
+
+              <div className="szFormGroup">
+                <label className="szFormLabel">عنوان الشحن والتسليم / المقر</label>
+                <input
+                  className="szFormInput"
+                  name="userShippingAddress"
+                  value={form.userShippingAddress}
+                  onChange={onChange}
+                  placeholder="السوق الكبير، عمارة الذهب، الطابق 2"
+                />
+              </div>
+
+              <div className="szFormGroup">
+                <label className="szFormLabel">رقم هاتف بديل / إضافي</label>
+                <input
+                  className="szFormInput"
+                  name="userAlternatePhone"
+                  value={form.userAlternatePhone}
+                  onChange={onChange}
+                  placeholder="0123456789"
+                />
+              </div>
+            </div>
+
+            {!isEditing && form.isNewUser && (
+              <div className="szFormGroup" style={{ marginTop: 12 }}>
+                <label className="szFormLabel">كلمة المرور للحساب الجديد</label>
+                <input
+                  className="szFormInput"
+                  name="userPassword"
+                  type="password"
+                  value={form.userPassword}
+                  onChange={onChange}
+                  placeholder="•••••••• (افتراضي: 123456)"
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="szFormGroup" style={{ marginTop: 16 }}>
             <label className="szToggleLabel">
               <input
                 type="checkbox"
@@ -460,13 +554,13 @@ export default function AdminVendorsClient() {
                 checked={form.approved}
                 onChange={onChange}
               />
-              <span><strong>متجر معتمد ومفعل:</strong> يظهر المتجر ومنتجاته للمتسوقين فوراً</span>
+              <span><strong>متجر معتمد ومفعل:</strong> يظهر المتجر ومنتجاته للمتسوقين فوراً في المنصة</span>
             </label>
           </div>
 
           <div className="szFormActionButtons">
             <button className="szSubmitProductBtn" type="submit" disabled={saving}>
-              {saving ? "جارِ الحفظ..." : isEditing ? "✓ حفظ التعديلات والصورة" : "✓ إنشاء وتخصيص المتجر"}
+              {saving ? "جارِ الحفظ..." : isEditing ? "✓ حفظ التعديلات والبيانات" : "✓ إنشاء وتخصيص المتجر"}
             </button>
             <button className="szCancelFormBtn" type="button" onClick={resetForm}>
               إلغاء
@@ -492,6 +586,7 @@ export default function AdminVendorsClient() {
                   <th>شعار المتجر</th>
                   <th>المتجر</th>
                   <th>المالك / التاجر</th>
+                  <th>المدينة / العنوان</th>
                   <th>رابط المتجر</th>
                   <th>عدد المنتجات</th>
                   <th>حالة الاعتماد</th>
@@ -534,6 +629,12 @@ export default function AdminVendorsClient() {
                         <div className="szContactCell">
                           <strong>{v.owner?.name || "بدون اسم"}</strong>
                           <small>{v.owner?.phone || v.owner?.email || "—"}</small>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="szContactCell">
+                          <span>{v.owner?.city ? `📍 ${v.owner.city}` : "—"}</span>
+                          <small>{v.owner?.shippingAddress ? v.owner.shippingAddress.substring(0, 25) + "..." : ""}</small>
                         </div>
                       </td>
                       <td>
@@ -616,6 +717,19 @@ export default function AdminVendorsClient() {
         }
         .szStoreLogoInputWrap {
           flex: 1;
+        }
+        .szMerchantDetailsBox {
+          margin-top: 16px;
+          padding: 18px;
+          background: #f8fafc;
+          border-radius: 16px;
+          border: 1px solid #e2e8f0;
+        }
+        .szMerchantDetailsTitle {
+          margin: 0 0 14px;
+          font-size: 0.95rem;
+          font-weight: 800;
+          color: #0f172a;
         }
         .szStoreTableLogo {
           width: 44px;
