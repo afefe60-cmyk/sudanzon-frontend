@@ -9,7 +9,7 @@ import { getProductImage } from "../../../lib/media";
 
 export default function StoreProfilePage() {
   const params = useParams();
-  const slug = params?.slug;
+  const rawSlug = params?.slug;
 
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -19,25 +19,43 @@ export default function StoreProfilePage() {
   const [cartMessage, setCartMessage] = useState("");
 
   useEffect(() => {
-    if (!slug) return;
+    if (!rawSlug) return;
     setLoading(true);
     setError("");
 
-    apiJson(`/api/products/stores/${encodeURIComponent(slug)}`)
-      .then((data) => {
+    let cleanSlug = "";
+    try {
+      cleanSlug = decodeURIComponent(String(rawSlug));
+    } catch {
+      cleanSlug = String(rawSlug);
+    }
+
+    const fetchStore = async () => {
+      try {
+        const data = await apiJson(`/api/products/stores/${encodeURIComponent(cleanSlug)}`);
         if (data.store) {
           setStore(data.store);
-        } else {
-          setError("المتجر غير موجود أو تم إيقافه مؤقتاً");
+          return;
         }
-      })
-      .catch((err) => {
-        setError(err.message || "تعذر جلب بيانات المتجر");
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, [slug]);
+      } catch {
+        // Fallback with raw slug
+        try {
+          const fallbackData = await apiJson(`/api/products/stores/${rawSlug}`);
+          if (fallbackData.store) {
+            setStore(fallbackData.store);
+            return;
+          }
+        } catch {
+          // Both failed
+        }
+      }
+      setError("المتجر غير متاح أو قيد التفعيل من الإدارة.");
+    };
+
+    fetchStore().finally(() => {
+      setLoading(false);
+    });
+  }, [rawSlug]);
 
   const addToCart = (product) => {
     if (typeof window === "undefined") return;
@@ -288,6 +306,9 @@ export default function StoreProfilePage() {
                           src={getProductImage(product)}
                           alt={product.name}
                           className="szStoreProductThumbImg"
+                          onError={(e) => {
+                            e.currentTarget.src = "/products/fashion.jpg";
+                          }}
                         />
                         <span className="szStoreProductCatBadge">
                           {product.category?.name || product.category || "عام"}

@@ -64,6 +64,9 @@ export default function ProductDetailClient({ product, specs = [] }) {
               src={selectedImage}
               alt={product.name}
               className="szMainImage"
+              onError={(e) => {
+                e.currentTarget.src = "/products/fashion.jpg";
+              }}
             />
             {discount > 0 && (
               <span className="szGalleryDiscountBadge">خصم {discount}%</span>
@@ -90,7 +93,13 @@ export default function ProductDetailClient({ product, specs = [] }) {
                   onClick={() => setSelectedImage(imgUrl)}
                   className={`szThumbBtn ${selectedImage === imgUrl ? "is-active" : ""}`}
                 >
-                  <img src={imgUrl} alt={`${product.name} ${idx + 1}`} />
+                  <img
+                    src={imgUrl}
+                    alt={`${product.name} ${idx + 1}`}
+                    onError={(e) => {
+                      e.currentTarget.src = "/products/fashion.jpg";
+                    }}
+                  />
                 </button>
               ))}
             </div>
