@@ -150,41 +150,55 @@ export default function StoreProfileClient({ initialStore, initialSlug }) {
                 </div>
               </div>
 
-              {/* Merchant Contact Actions */}
-              <div className="szStoreContactCard">
-                <h3 className="szContactCardTitle">📞 تواصل مباشر مع التاجر</h3>
+                  {/* Merchant Contact Actions */}
+                  <div className="szStoreContactCard">
+                    <h3 className="szContactCardTitle">📞 تواصل ومشاركة المتجر</h3>
 
-                <div className="szContactButtonsGrid">
-                  {store.owner?.phone && (
-                    <a
-                      href={`https://wa.me/${getFormattedPhone()}?text=${encodeURIComponent(`السلام عليكم، استفسار بخصوص متجر ${store.storeName} على منصة سودان زون`)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="szStoreContactBtn szStoreContactBtn--whatsapp"
-                    >
-                      <span>💬 تواصل عبر واتساب</span>
-                    </a>
-                  )}
+                    <div className="szContactButtonsGrid">
+                      {store.owner?.phone && (
+                        <a
+                          href={`https://wa.me/${getFormattedPhone()}?text=${encodeURIComponent(`السلام عليكم، استفسار بخصوص متجر ${store.storeName} على منصة سودان زون`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="szStoreContactBtn szStoreContactBtn--whatsapp"
+                        >
+                          <span>💬 تواصل مع التاجر واتساب</span>
+                        </a>
+                      )}
 
-                  {store.owner?.phone && (
-                    <a
-                      href={`tel:${store.owner.phone}`}
-                      className="szStoreContactBtn szStoreContactBtn--phone"
-                    >
-                      <span>📞 اتصال هاتفي ({store.owner.phone})</span>
-                    </a>
-                  )}
+                      <a
+                        href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`🏬 متجر ${store.storeName} على منصة سودان زون 🇸🇩\n✨ تصفح كافة العروض والمنتجات الأصلية وتواصل مع التاجر مباشرة:\nhttps://sudanzon.com/stores/${encodeURIComponent(store.storeSlug || initialSlug)}`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="szStoreContactBtn szStoreContactBtn--share"
+                      >
+                        <span>📢 مشاركة المتجر عبر واتساب</span>
+                      </a>
 
-                  {store.owner?.email && (
-                    <a
-                      href={`mailto:${store.owner.email}`}
-                      className="szStoreContactBtn szStoreContactBtn--email"
-                    >
-                      <span>✉️ البريد الإلكتروني</span>
-                    </a>
-                  )}
-                </div>
-              </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (typeof navigator !== "undefined") {
+                            navigator.clipboard.writeText(`https://sudanzon.com/stores/${store.storeSlug || initialSlug}`);
+                            setCartMessage("✓ تم نسخ رابط المتجر بنجاح لمشاركته!");
+                            setTimeout(() => setCartMessage(""), 2800);
+                          }
+                        }}
+                        className="szStoreContactBtn szStoreContactBtn--copy"
+                      >
+                        <span>🔗 نسخ رابط المتجر</span>
+                      </button>
+
+                      {store.owner?.phone && (
+                        <a
+                          href={`tel:${store.owner.phone}`}
+                          className="szStoreContactBtn szStoreContactBtn--phone"
+                        >
+                          <span>📞 اتصال هاتفي ({store.owner.phone})</span>
+                        </a>
+                      )}
+                    </div>
+                  </div>
             </div>
           </div>
         </div>
@@ -523,6 +537,19 @@ export default function StoreProfileClient({ initialStore, initialSlug }) {
           background: #25d366;
           color: #ffffff;
           box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+        }
+
+        .szStoreContactBtn--share {
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          color: #ffffff;
+          box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .szStoreContactBtn--copy {
+          background: rgba(255, 255, 255, 0.12);
+          color: #ffffff;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          cursor: pointer;
         }
 
         .szStoreContactBtn--phone {
