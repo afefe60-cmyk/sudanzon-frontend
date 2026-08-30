@@ -71,7 +71,17 @@ export default function ProductCard({ product, badge, isHot = false }) {
       {/* Product Details */}
       <div className="szCardBody">
         <div className="szCardMeta">
-          <span className="szVendor">{vendorName}</span>
+          {product.vendor?.storeSlug ? (
+            <Link
+              href={`/stores/${product.vendor.storeSlug}`}
+              className="szVendorLink"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {vendorName}
+            </Link>
+          ) : (
+            <span className="szVendor">{vendorName}</span>
+          )}
           <div className="szRating">
             <span className="szStar">★</span>
             <span className="szRatingValue">{rating}</span>

@@ -264,13 +264,21 @@ export default function ProductDetailClient({ product, specs = [] }) {
             <div className="szSellerSnapHeader">
               <span className="szSellerSnapIcon">🏬</span>
               <div>
-                <strong>{product.vendor?.storeName || product.vendor || "سودان زون"}</strong>
+                <strong>{product.vendor?.storeName || (typeof product.vendor === "string" ? product.vendor : "سودان زون")}</strong>
                 <small>بائع معتمد بالمنصة</small>
               </div>
             </div>
             <p className="szSellerSnapDesc">
               {product.vendor?.description || "متجر موثوق يقدم منتجات مختارة بعناية داخل SudanZon."}
             </p>
+            {product.vendor?.storeSlug ? (
+              <Link href={`/stores/${product.vendor.storeSlug}`} className="szVisitStoreBtn">
+                <span>زيارة صفحة المتجر وتصفح منتجاته</span>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+              </Link>
+            ) : null}
           </div>
         </div>
       </div>
