@@ -70,7 +70,7 @@ export default function SiteSplashScreen() {
         <p className="szSplashStatusText">جارِ تجهيز العروض والمتاجر الحصرية...</p>
 
         <div className="szSplashFooterVer">
-          <span>الإصدار 2.0 • 2026 SudanZon</span>
+          <span>الإصدار 1.0.0 • 2026 SudanZon</span>
         </div>
       </div>
     </div>
