@@ -1,35 +1,17 @@
 import SiteHeader from "../../../components/SiteHeader";
-import SectionHeading from "../../../components/SectionHeading";
-import AuthForm from "../../../components/AuthForm";
+import VendorRegisterClient from "../../../components/VendorRegisterClient";
 
-export default function VendorRegisterPage({ searchParams }) {
+export const metadata = {
+  title: "كن بائعاً في سودان زون | سجل متجرك وابدأ البيع فوراً",
+  description:
+    "انضم إلى نخبة تجار منصة سودان زون. اعرض منتجاتك لآلاف المتسوقين، واستفد من خيارات الدفع عبر بنكك وشبكة التوصيل السريع لكافة الولايات.",
+};
+
+export default function VendorRegisterPage() {
   return (
-    <main className="pageShell">
+    <main className="szPageShell">
       <SiteHeader />
-      <section className="sectionBlock">
-        <div className="container">
-          <SectionHeading title="طلب حساب تاجر" />
-
-          <div className="authLoginCenter">
-            <div className="authStack authLoginPanel">
-              <AuthForm
-                title="إنشاء طلب تاجر"
-                subtitle=""
-                endpoint="/api/auth/register/vendor"
-                submitLabel="إرسال الطلب"
-                returnTo="/auth/login?notice=vendor-pending"
-                fields={[
-                  { name: "name", placeholder: "اسم المسؤول" },
-                  { name: "storeName", placeholder: "اسم المتجر" },
-                  { name: "phone", placeholder: "رقم الهاتف", required: false },
-                  { name: "email", placeholder: "البريد الإلكتروني", required: false },
-                  { name: "password", placeholder: "كلمة المرور", type: "password" },
-                ]}
-              />
-            </div>
-          </div>
-        </div>
-      </section>
+      <VendorRegisterClient />
     </main>
   );
 }

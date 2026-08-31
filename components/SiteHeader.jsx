@@ -231,7 +231,7 @@ export default function SiteHeader() {
             <span>توصيل سريع لكافة المدن السودانية | الدفع عند الاستلام وبنكك</span>
           </div>
           <div className="szBannerLinks">
-            <Link href="/seller" className="szBannerLink">كن بائعاً في سودان زون</Link>
+            <Link href="/auth/vendor" className="szBannerLink">كن بائعاً في سودان زون</Link>
             <span className="szBannerDivider">•</span>
             <Link href="/products?q=شحن" className="szBannerLink">خدمات الشحن</Link>
           </div>

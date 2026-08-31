@@ -93,7 +93,7 @@ export default function MarketPulse({ products = [], categories = [] }) {
             <Link className="szHeroBtn szHeroBtn--primary" href="/products">
               استكشف كل المنتجات ({totalProducts})
             </Link>
-            <Link className="szHeroBtn szHeroBtn--outline" href="/seller">
+            <Link className="szHeroBtn szHeroBtn--outline" href="/auth/vendor">
               انضم كبائع معتمد
             </Link>
           </div>

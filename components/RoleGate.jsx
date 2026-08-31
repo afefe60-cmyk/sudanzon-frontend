@@ -4,7 +4,17 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { apiJson } from "../lib/api";
 
-export default function RoleGate({ allowedRoles = ["ADMIN"], fallback = "/account", children }) {
+export default function RoleGate({
+  allowedRoles = ["ADMIN"],
+  fallback = "/account",
+  title = "لوحة التحكم والإدارة (Admin Portal)",
+  subtitle = "يرجى تسجيل الدخول للوصول إلى مركز الإدارة والتحكم التنفيذي.",
+  icon = "🛡️",
+  submitLabel = "تسجيل الدخول",
+  registerLink = null,
+  registerText = null,
+  children,
+}) {
   const [ready, setReady] = useState(false);
   const [allowed, setAllowed] = useState(false);
   const [userRole, setUserRole] = useState(null);
@@ -52,7 +62,7 @@ export default function RoleGate({ allowedRoles = ["ADMIN"], fallback = "/accoun
     checkAuth();
   }, []);
 
-  const handleAdminLogin = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoginLoading(true);
     setLoginError("");
@@ -77,7 +87,7 @@ export default function RoleGate({ allowedRoles = ["ADMIN"], fallback = "/accoun
         setUserRole(role);
 
         if (allowedRoles.length > 0 && !allowedRoles.includes(role)) {
-          setLoginError(`هذا الحساب مسجل كـ (${role}) وليس لديه صلاحية الإدارة (ADMIN).`);
+          setLoginError(`هذا الحساب مسجل كـ (${role}) ولا يملك الصلاحية المطلوبة (${allowedRoles.join(" أو ")}).`);
           setAllowed(false);
         } else {
           setAllowed(true);
@@ -104,7 +114,7 @@ export default function RoleGate({ allowedRoles = ["ADMIN"], fallback = "/accoun
     return (
       <div className="szRoleGateLoadingCard">
         <div className="szSpinner" />
-        <p>جارِ التحقق من الصلاحيات الإدارية...</p>
+        <p>جارِ التحقق من الصلاحيات...</p>
       </div>
     );
   }
@@ -113,26 +123,24 @@ export default function RoleGate({ allowedRoles = ["ADMIN"], fallback = "/accoun
     return (
       <div className="szRoleGateContainer">
         <div className="szRoleGateCard">
-          <div className="szRoleGateIcon">🛡️</div>
-          <h2 className="szRoleGateTitle">لوحة التحكم والإدارة (Admin Portal)</h2>
+          <div className="szRoleGateIcon">{icon}</div>
+          <h2 className="szRoleGateTitle">{title}</h2>
 
           {userRole ? (
             <div className="szRoleGateErrorBox">
               <p>
-                أنت مسجل حالياً بحساب ذو صلاحية <strong>({userRole})</strong>. للدخول إلى لوحة الإدارة العامة لمنصة SudanZon يجب تسجيل الدخول بحساب المدير (ADMIN).
+                أنت مسجل حالياً بحساب ذو صلاحية <strong>({userRole})</strong>. للدخول يلزم حساب برتبة <strong>({allowedRoles.join(" أو ")})</strong>.
               </p>
               <button type="button" onClick={handleLogout} className="szSwitchAccountBtn">
-                تسجيل الخروج والتبديل لحساب المدير
+                تسجيل الخروج والتبديل لحساب آخر
               </button>
             </div>
           ) : (
-            <p className="szRoleGateSubtitle">
-              يرجى تسجيل الدخول بحساب المدير للوصول إلى مركز الإدارة والتحكم التنفيذي.
-            </p>
+            <p className="szRoleGateSubtitle">{subtitle}</p>
           )}
 
-          {(!userRole || userRole !== "ADMIN") && (
-            <form onSubmit={handleAdminLogin} className="szRoleGateForm">
+          {(!userRole || !allowedRoles.includes(userRole)) && (
+            <form onSubmit={handleLogin} className="szRoleGateForm">
               {loginError && <div className="szRoleGateAlert">⚠️ {loginError}</div>}
 
               <div className="szFormGroup">
@@ -140,7 +148,7 @@ export default function RoleGate({ allowedRoles = ["ADMIN"], fallback = "/accoun
                 <input
                   type="text"
                   className="szFormInput"
-                  placeholder="admin@sudanzon.com"
+                  placeholder="admin@sudanzon.com أو رقم الهاتف"
                   value={loginIdentifier}
                   onChange={(e) => setLoginIdentifier(e.target.value)}
                   required
@@ -160,10 +168,18 @@ export default function RoleGate({ allowedRoles = ["ADMIN"], fallback = "/accoun
               </div>
 
               <button type="submit" className="szSubmitBtn" disabled={loginLoading}>
-                {loginLoading ? "جارِ التحقق والدخول..." : "دخول إلى لوحة الإدارة"}
+                {loginLoading ? "جارِ التحقق والدخول..." : submitLabel}
               </button>
 
-              <div style={{ textAlign: "center", marginTop: 14 }}>
+              {registerLink && (
+                <div style={{ textAlign: "center", marginTop: 12, padding: "10px 0", borderTop: "1px dashed #e2e8f0" }}>
+                  <Link href={registerLink} style={{ color: "#059669", fontSize: "0.9rem", fontWeight: 700, textDecoration: "none" }}>
+                    {registerText || "انضم كتاجر جديد وسجل متجرك الآن 👈"}
+                  </Link>
+                </div>
+              )}
+
+              <div style={{ textAlign: "center", marginTop: 10 }}>
                 <Link href="/" style={{ color: "#64748b", fontSize: "0.85rem", textDecoration: "none" }}>
                   ← العودة إلى الصفحة الرئيسية
                 </Link>

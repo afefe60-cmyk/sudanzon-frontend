@@ -12,7 +12,16 @@ export default function SellerPage() {
 
       <section className="szSellerDashboardSection">
         <div className="container">
-          <RoleGate allowedRoles={["VENDOR", "ADMIN"]} fallback="/account">
+          <RoleGate
+            allowedRoles={["VENDOR", "ADMIN"]}
+            fallback="/account"
+            title="لوحة تحكم وإدارة المتجر (Seller Portal)"
+            subtitle="يرجى تسجيل الدخول بحساب التاجر المعتمد لإدارة المنتجات والمبيعات والمخزون."
+            icon="🏬"
+            submitLabel="دخول إلى لوحة المتجر"
+            registerLink="/auth/vendor"
+            registerText="ليس لديك حساب تاجر بعد؟ انضم وسجل متجرك الآن 👈"
+          >
             {/* Dashboard Header Bar */}
             <div className="szSellerHeaderBar">
               <div className="szSellerHeaderCopy">
