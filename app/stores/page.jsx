@@ -12,12 +12,12 @@ export default function AllStoresPage() {
 
   useEffect(() => {
     setLoading(true);
-    apiJson("/api/admin/vendors")
+    apiJson("/api/products/stores")
       .then((data) => {
         setStores(data.items || []);
       })
       .catch(() => {
-        // Fallback: list of stores from categories
+        setStores([]);
       })
       .finally(() => {
         setLoading(false);
