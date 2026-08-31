@@ -8,9 +8,12 @@ import { products as fallbackProducts } from "../../../lib/mock-data";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "https://api.sudanzon.com").replace(/\/+$/, "");
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 async function loadProduct(id) {
   try {
-    const result = await apiJson(`/api/products/${id}`);
+    const result = await apiJson(`/api/products/${id}`, { cache: "no-store" });
     return result.item || fallbackProducts.find((item) => String(item.id) === String(id)) || fallbackProducts[0];
   } catch {
     return fallbackProducts.find((item) => String(item.id) === String(id)) || fallbackProducts[0];
