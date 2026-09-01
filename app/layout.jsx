@@ -1,6 +1,7 @@
 import { Tajawal } from "next/font/google";
 import "./globals.css";
 import SiteSplashScreen from "../components/SiteSplashScreen";
+import SupportWidget from "../components/SupportWidget";
 
 const tajawal = Tajawal({
   subsets: ["arabic", "latin"],
@@ -157,6 +158,7 @@ export default function RootLayout({ children }) {
       <body className={tajawal.className}>
         <SiteSplashScreen />
         {children}
+        <SupportWidget />
       </body>
     </html>
   );
