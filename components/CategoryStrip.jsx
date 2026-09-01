@@ -57,24 +57,6 @@ export default function CategoryStrip({ categories = [], categoryIcons = {} }) {
             <h2 className="szCategoryMainTitle">تسوق حسب التصنيف</h2>
             <span className="szCategorySubtitle">اكتشف آلاف المنتجات عبر تصنيفاتنا المتنوعة</span>
           </div>
-          <div className="szCategoryNavArrows">
-            <button
-              type="button"
-              onClick={() => scroll("right")}
-              className="szCatArrowBtn"
-              aria-label="التمرير لليمين"
-            >
-              ❯
-            </button>
-            <button
-              type="button"
-              onClick={() => scroll("left")}
-              className="szCatArrowBtn"
-              aria-label="التمرير لليسار"
-            >
-              ❮
-            </button>
-          </div>
         </div>
 
         <div className="szCategoryTrack" ref={scrollRef}>
