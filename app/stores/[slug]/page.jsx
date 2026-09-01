@@ -106,8 +106,42 @@ export default async function StorePage({ params }) {
     cleanSlug = String(params?.slug || "");
   }
 
+  const storeName = store?.storeName || cleanSlug;
+  const canonicalUrl = `https://sudanzon.com/stores/${encodeURIComponent(cleanSlug)}`;
+  const logoUrl = store?.logo
+    ? store.logo.startsWith("http")
+      ? store.logo
+      : `${API_BASE}${store.logo}`
+    : "https://sudanzon.com/logo.png";
+
+  const jsonLd = store
+    ? {
+        "@context": "https://schema.org",
+        "@type": "Store",
+        name: store.storeName,
+        description: store.description || `متجر ${store.storeName} المعتمد على منصة سودان زون.`,
+        url: canonicalUrl,
+        image: logoUrl,
+        telephone: store.user?.phone || "+249",
+        address: {
+          "@type": "PostalAddress",
+          addressLocality: store.user?.city || "الخرطوم",
+          addressCountry: "SD",
+        },
+        priceRange: "$$",
+        currenciesAccepted: "SDG",
+        paymentAccepted: "Cash, Bankak, Card",
+      }
+    : null;
+
   return (
     <main className="szPageShell">
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
       <SiteHeader />
       <StoreProfileClient initialStore={store} initialSlug={cleanSlug} />
     </main>
