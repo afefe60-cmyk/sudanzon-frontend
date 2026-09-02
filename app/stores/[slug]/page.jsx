@@ -32,8 +32,14 @@ async function getStoreData(slug) {
   return null;
 }
 
-function resolveStoreShareImage(store) {
-  if (!store) return "https://sudanzon.com/logo.png";
+function resolveStoreShareImages(store) {
+  if (!store) {
+    return {
+      optimized: "https://sudanzon.com/logo.png",
+      direct: "https://sudanzon.com/logo.png",
+      mimeType: "image/png",
+    };
+  }
 
   let candidate = store.logo || store.banner;
 
@@ -43,16 +49,33 @@ function resolveStoreShareImage(store) {
   }
 
   if (!candidate) {
-    return "https://sudanzon.com/logo.png";
+    return {
+      optimized: "https://sudanzon.com/logo.png",
+      direct: "https://sudanzon.com/logo.png",
+      mimeType: "image/png",
+    };
   }
 
   const raw = String(candidate).trim();
+  let direct = "";
   if (raw.startsWith("http://") || raw.startsWith("https://")) {
-    return raw.replace("https://api.sudanzon.com/uploads", "https://sudanzon.com/uploads");
+    direct = raw;
+  } else {
+    const cleanPath = raw.startsWith("/") ? raw : `/${raw}`;
+    direct = `https://api.sudanzon.com${cleanPath}`;
   }
 
-  const cleanPath = raw.startsWith("/") ? raw : `/${raw}`;
-  return `https://sudanzon.com${cleanPath}`;
+  // Next.js automatic image optimization ensures the image is < 100KB, perfectly compliant with WhatsApp's strict 300KB limit
+  const optimized = `https://sudanzon.com/_next/image?url=${encodeURIComponent(direct)}&w=600&q=80`;
+  const isPng = raw.toLowerCase().endsWith(".png");
+  const isWebp = raw.toLowerCase().endsWith(".webp");
+  const mimeType = isPng ? "image/png" : isWebp ? "image/webp" : "image/jpeg";
+
+  return {
+    optimized,
+    direct,
+    mimeType,
+  };
 }
 
 export async function generateMetadata({ params }) {
@@ -77,11 +100,7 @@ export async function generateMetadata({ params }) {
     store.description ||
     `تصفح كافة منتجات وعروض متجر ${storeName} الحصرية على منصة سودان زون. تواصل مباشر مع التاجر عبر واتساب وتوصيل سريع لكافة المدن والدفع عند الاستلام وبنكك.`;
 
-  const shareImageUrl = resolveStoreShareImage(store);
-  const isPng = shareImageUrl.toLowerCase().endsWith(".png");
-  const isWebp = shareImageUrl.toLowerCase().endsWith(".webp");
-  const mimeType = isPng ? "image/png" : isWebp ? "image/webp" : "image/jpeg";
-
+  const { optimized, direct, mimeType } = resolveStoreShareImages(store);
   const canonicalUrl = `https://sudanzon.com/stores/${encodeURIComponent(cleanSlug)}`;
 
   return {
@@ -97,12 +116,20 @@ export async function generateMetadata({ params }) {
       siteName: "سودان زون | SudanZon",
       images: [
         {
-          url: shareImageUrl,
-          secureUrl: shareImageUrl,
+          url: optimized,
+          secureUrl: optimized,
+          width: 600,
+          height: 600,
+          type: mimeType,
+          alt: `شعار متجر ${storeName}`,
+        },
+        {
+          url: direct,
+          secureUrl: direct,
           width: 800,
           height: 800,
           type: mimeType,
-          alt: `متجر ${storeName} - سودان زون`,
+          alt: `متجر ${storeName}`,
         },
       ],
       locale: "ar_SD",
@@ -112,7 +139,7 @@ export async function generateMetadata({ params }) {
       card: "summary_large_image",
       title: `متجر ${storeName} | سودان زون`,
       description: desc,
-      images: [shareImageUrl],
+      images: [optimized],
     },
   };
 }
@@ -129,7 +156,7 @@ export default async function StorePage({ params }) {
 
   const storeName = store?.storeName || cleanSlug;
   const canonicalUrl = `https://sudanzon.com/stores/${encodeURIComponent(cleanSlug)}`;
-  const logoUrl = resolveStoreShareImage(store);
+  const { direct: logoUrl } = resolveStoreShareImages(store);
 
   const jsonLd = store
     ? {

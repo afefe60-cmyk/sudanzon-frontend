@@ -14,6 +14,15 @@ const nextConfig = {
       },
     ],
   },
+  async rewrites() {
+    return [
+      {
+        source: "/uploads/:path*",
+        destination: "https://api.sudanzon.com/uploads/:path*",
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;
+
