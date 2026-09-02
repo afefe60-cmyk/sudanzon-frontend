@@ -32,6 +32,29 @@ async function getStoreData(slug) {
   return null;
 }
 
+function resolveStoreShareImage(store) {
+  if (!store) return "https://sudanzon.com/logo.png";
+
+  let candidate = store.logo || store.banner;
+
+  if (!candidate && Array.isArray(store.products) && store.products.length > 0) {
+    const first = store.products[0];
+    candidate = first?.image || (Array.isArray(first?.images) ? first.images[0] : null);
+  }
+
+  if (!candidate) {
+    return "https://sudanzon.com/logo.png";
+  }
+
+  const raw = String(candidate).trim();
+  if (raw.startsWith("http://") || raw.startsWith("https://")) {
+    return raw.replace("https://api.sudanzon.com/uploads", "https://sudanzon.com/uploads");
+  }
+
+  const cleanPath = raw.startsWith("/") ? raw : `/${raw}`;
+  return `https://sudanzon.com${cleanPath}`;
+}
+
 export async function generateMetadata({ params }) {
   const store = await getStoreData(params?.slug);
 
@@ -54,14 +77,10 @@ export async function generateMetadata({ params }) {
     store.description ||
     `تصفح كافة منتجات وعروض متجر ${storeName} الحصرية على منصة سودان زون. تواصل مباشر مع التاجر عبر واتساب وتوصيل سريع لكافة المدن والدفع عند الاستلام وبنكك.`;
 
-  let logoUrl = "https://sudanzon.com/logo.png";
-  if (store.logo) {
-    if (store.logo.startsWith("http")) {
-      logoUrl = store.logo;
-    } else if (store.logo.startsWith("/uploads/")) {
-      logoUrl = `${API_BASE}${store.logo}`;
-    }
-  }
+  const shareImageUrl = resolveStoreShareImage(store);
+  const isPng = shareImageUrl.toLowerCase().endsWith(".png");
+  const isWebp = shareImageUrl.toLowerCase().endsWith(".webp");
+  const mimeType = isPng ? "image/png" : isWebp ? "image/webp" : "image/jpeg";
 
   const canonicalUrl = `https://sudanzon.com/stores/${encodeURIComponent(cleanSlug)}`;
 
@@ -78,10 +97,12 @@ export async function generateMetadata({ params }) {
       siteName: "سودان زون | SudanZon",
       images: [
         {
-          url: logoUrl,
+          url: shareImageUrl,
+          secureUrl: shareImageUrl,
           width: 800,
           height: 800,
-          alt: `شعار متجر ${storeName}`,
+          type: mimeType,
+          alt: `متجر ${storeName} - سودان زون`,
         },
       ],
       locale: "ar_SD",
@@ -91,7 +112,7 @@ export async function generateMetadata({ params }) {
       card: "summary_large_image",
       title: `متجر ${storeName} | سودان زون`,
       description: desc,
-      images: [logoUrl],
+      images: [shareImageUrl],
     },
   };
 }
@@ -108,11 +129,7 @@ export default async function StorePage({ params }) {
 
   const storeName = store?.storeName || cleanSlug;
   const canonicalUrl = `https://sudanzon.com/stores/${encodeURIComponent(cleanSlug)}`;
-  const logoUrl = store?.logo
-    ? store.logo.startsWith("http")
-      ? store.logo
-      : `${API_BASE}${store.logo}`
-    : "https://sudanzon.com/logo.png";
+  const logoUrl = resolveStoreShareImage(store);
 
   const jsonLd = store
     ? {

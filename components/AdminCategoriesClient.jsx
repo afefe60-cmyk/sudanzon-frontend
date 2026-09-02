@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { apiJson } from "../lib/api";
+import { useEffect, useState, useRef } from "react";
+import { apiJson, apiForm } from "../lib/api";
+import { resolveImageUrl } from "../lib/media";
 
 const categoryIconMap = {
   "إلكترونيات": "🔌",
@@ -16,10 +17,20 @@ const categoryIconMap = {
   "قطع غيار السيارات": "🏎️",
 };
 
+const popularCategoryEmojis = [
+  "🔌", "📱", "💻", "👑", "👕", "👟", "☕", "🛒", "✨", "🏎️",
+  "💊", "👶", "📚", "🍔", "🏠", "🎁", "⚽", "🕶️", "⌚", "💄",
+  "🌿", "🎮", "🎧", "🚲", "🛠️", "🎨", "🛍️", "🧴", "🍎", "🛋️",
+];
+
 const emptyForm = {
   id: "",
   name: "",
   slug: "",
+  icon: "🛍️",
+  image: "",
+  imageFile: null,
+  imagePreview: "",
 };
 
 export default function AdminCategoriesClient() {
@@ -29,6 +40,7 @@ export default function AdminCategoriesClient() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
+  const fileInputRef = useRef(null);
 
   const getToken = () => (typeof window === "undefined" ? "" : localStorage.getItem("sudanzonToken") || "");
 
@@ -56,9 +68,40 @@ export default function AdminCategoriesClient() {
     setForm((current) => ({ ...current, [name]: value }));
   };
 
+  const onSelectEmoji = (emoji) => {
+    setForm((current) => ({ ...current, icon: emoji }));
+  };
+
+  const onFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const previewUrl = URL.createObjectURL(file);
+      setForm((current) => ({
+        ...current,
+        imageFile: file,
+        imagePreview: previewUrl,
+      }));
+    }
+  };
+
+  const removeSelectedImage = () => {
+    setForm((current) => ({
+      ...current,
+      image: "",
+      imageFile: null,
+      imagePreview: "",
+    }));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const resetForm = () => {
     setForm(emptyForm);
     setShowAddForm(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const submitForm = async (event) => {
@@ -66,19 +109,36 @@ export default function AdminCategoriesClient() {
     setSaving(true);
     setMessage("");
 
-    const payload = {
-      name: form.name.trim(),
-      slug: form.slug.trim(),
-    };
-
     try {
-      await apiJson(form.id ? `/api/admin/categories/${form.id}` : "/api/admin/categories", {
-        method: form.id ? "PUT" : "POST",
-        headers: {
-          Authorization: `Bearer ${getToken()}`,
-        },
-        body: JSON.stringify(payload),
-      });
+      if (form.imageFile) {
+        const formData = new FormData();
+        formData.append("name", form.name.trim());
+        formData.append("slug", form.slug.trim());
+        if (form.icon) formData.append("icon", form.icon.trim());
+        formData.append("imageFile", form.imageFile);
+
+        await apiForm(form.id ? `/api/admin/categories/${form.id}` : "/api/admin/categories", formData, {
+          method: form.id ? "PUT" : "POST",
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+          },
+        });
+      } else {
+        const payload = {
+          name: form.name.trim(),
+          slug: form.slug.trim(),
+          icon: form.icon ? form.icon.trim() : null,
+          image: form.image ? form.image.trim() : null,
+        };
+
+        await apiJson(form.id ? `/api/admin/categories/${form.id}` : "/api/admin/categories", {
+          method: form.id ? "PUT" : "POST",
+          headers: {
+            Authorization: `Bearer ${getToken()}`,
+          },
+          body: JSON.stringify(payload),
+        });
+      }
 
       setMessage(form.id ? "✓ تم تحديث التصنيف بنجاح" : "✓ تمت إضافة التصنيف الجديد بنجاح");
       resetForm();
@@ -95,8 +155,13 @@ export default function AdminCategoriesClient() {
       id: category.id,
       name: category.name || "",
       slug: category.slug || "",
+      icon: category.icon || categoryIconMap[category.name] || "🛍️",
+      image: category.image || "",
+      imageFile: null,
+      imagePreview: category.image ? resolveImageUrl(category.image) : "",
     });
     setShowAddForm(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const removeCategory = async (category) => {
@@ -123,7 +188,7 @@ export default function AdminCategoriesClient() {
       <div className="szAdminSectionTopBar">
         <div>
           <h3>🏷️ إدارة أقسام وتصنيفات المتجر</h3>
-          <p>أضف تصنيفات جديدة لتظهر فوراً في شريط الفئات والهيدر للمتسوقين.</p>
+          <p>أضف تصنيفات جديدة وأيقونات مميزة لتظهر فوراً في شريط الفئات والهيدر للمتسوقين.</p>
         </div>
         <button
           type="button"
@@ -140,10 +205,11 @@ export default function AdminCategoriesClient() {
       {message && <div className="szAdminAlert">{message}</div>}
 
       {showAddForm && (
-        <form onSubmit={submitForm} className="szAdminAddUserCard">
+        <form onSubmit={submitForm} className="szAdminAddUserCard szCategoryFormCard">
           <div className="szEditorHeader">
-            <h4>{form.id ? "تعديل بيانات التصنيف" : "إنشاء تصنيف جديد"}</h4>
+            <h4>{form.id ? "✏️ تعديل بيانات وأيقونة التصنيف" : "✨ إنشاء تصنيف جديد"}</h4>
           </div>
+
           <div className="szFormGrid2">
             <div className="szFormGroup">
               <label className="szFormLabel">اسم القسم (عربي) *</label>
@@ -167,6 +233,87 @@ export default function AdminCategoriesClient() {
               />
             </div>
           </div>
+
+          {/* Category Icon & Image Section */}
+          <div className="szCatMediaFormSection">
+            <div className="szCatMediaGroup">
+              <label className="szFormLabel">
+                <span>🎨 اختيار أيقونة التصنيف (رمز تعبيري / Emoji)</span>
+              </label>
+
+              <div className="szEmojiPickerContainer">
+                <div className="szEmojiPresetsGrid">
+                  {popularCategoryEmojis.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      className={`szEmojiPresetBtn ${form.icon === emoji ? "szEmojiPresetBtn--active" : ""}`}
+                      onClick={() => onSelectEmoji(emoji)}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="szCustomEmojiInputRow">
+                  <span className="szEmojiInputLabel">رمز مخصص:</span>
+                  <input
+                    type="text"
+                    name="icon"
+                    value={form.icon}
+                    onChange={onChange}
+                    placeholder="ضع رمز أو إيموجي هنا (مثلاً: 📱)"
+                    className="szFormInput szCustomEmojiInput"
+                    maxLength={10}
+                  />
+                  <div className="szSelectedIconPreview">
+                    <span className="szPreviewEmoji">{form.icon || "📦"}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="szCatMediaGroup szCatUploadGroup">
+              <label className="szFormLabel">
+                <span>🖼️ أو رفع صورة / أيقونة مخصصة للتصنيف (PNG, JPG, WEBP, SVG)</span>
+              </label>
+
+              <div className="szCatUploadBox">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={onFileChange}
+                  accept="image/png, image/jpeg, image/webp, image/svg+xml"
+                  className="szFileInputHidden"
+                  id="szCatFileInput"
+                />
+                <label htmlFor="szCatFileInput" className="szCatUploadLabel">
+                  <span className="szUploadIcon">📁</span>
+                  <span>اضغط هنا لاختيار صورة أو أيقونة من جهازك</span>
+                  <small>الحجم الأقصى 5 ميجابايت (يُفضل أبعاد مربعة 200×200 أو 512×512)</small>
+                </label>
+
+                {(form.imagePreview || form.image) && (
+                  <div className="szCatImagePreviewCard">
+                    <img
+                      src={form.imagePreview || resolveImageUrl(form.image)}
+                      alt="معاينة أيقونة التصنيف"
+                      className="szCatPreviewImg"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeSelectedImage}
+                      className="szCatRemoveImgBtn"
+                      title="إزالة الصورة"
+                    >
+                      ✕ إزالة
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div className="szFormActionButtons">
             <button className="szSubmitProductBtn" type="submit" disabled={saving}>
               {saving ? "جارِ الحفظ..." : form.id ? "✓ حفظ التعديل" : "+ إضافة التصنيف"}
@@ -188,11 +335,23 @@ export default function AdminCategoriesClient() {
       ) : (
         <div className="szAdminCategoryGrid">
           {categories.map((c) => {
-            const icon = categoryIconMap[c.name] || "📦";
+            const hasCustomImage = Boolean(c.image);
+            const icon = c.icon || categoryIconMap[c.name] || "📦";
+
             return (
               <div className="szAdminCategoryCard" key={c.id}>
                 <div className="szCategoryCardTop">
-                  <span className="szCatBigIcon">{icon}</span>
+                  {hasCustomImage ? (
+                    <div className="szCatCustomImgWrap">
+                      <img
+                        src={resolveImageUrl(c.image)}
+                        alt={c.name}
+                        className="szCatCustomImg"
+                      />
+                    </div>
+                  ) : (
+                    <span className="szCatBigIcon">{icon}</span>
+                  )}
                   <div>
                     <strong className="szCatName">{c.name}</strong>
                     <small className="szCatSlug">{c.slug || "بدون slug"}</small>
@@ -225,6 +384,179 @@ export default function AdminCategoriesClient() {
           })}
         </div>
       )}
+
+      <style jsx>{`
+        .szCategoryFormCard {
+          margin-bottom: 28px;
+        }
+        .szCatMediaFormSection {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+          margin: 18px 0;
+          padding: 16px;
+          background: #f8fafc;
+          border-radius: 16px;
+          border: 1px solid #e2e8f0;
+        }
+        .szCatMediaGroup {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .szEmojiPresetsGrid {
+          display: grid;
+          grid-template-columns: repeat(10, 1fr);
+          gap: 6px;
+          background: #ffffff;
+          padding: 10px;
+          border-radius: 12px;
+          border: 1px solid #cbd5e1;
+        }
+        .szEmojiPresetBtn {
+          background: #f1f5f9;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          font-size: 1.25rem;
+          padding: 6px 0;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .szEmojiPresetBtn:hover {
+          background: #e2e8f0;
+          transform: scale(1.15);
+        }
+        .szEmojiPresetBtn--active {
+          background: #ecfdf5 !important;
+          border-color: #10b981 !important;
+          box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+          transform: scale(1.12);
+        }
+        .szCustomEmojiInputRow {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-top: 10px;
+        }
+        .szEmojiInputLabel {
+          font-size: 0.85rem;
+          font-weight: 700;
+          color: #475569;
+          white-space: nowrap;
+        }
+        .szCustomEmojiInput {
+          max-width: 140px;
+          text-align: center;
+          font-size: 1.1rem;
+        }
+        .szSelectedIconPreview {
+          width: 42px;
+          height: 42px;
+          background: #ffffff;
+          border: 1px solid #cbd5e1;
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.5rem;
+        }
+        .szFileInputHidden {
+          display: none;
+        }
+        .szCatUploadBox {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .szCatUploadLabel {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 16px;
+          background: #ffffff;
+          border: 2px dashed #cbd5e1;
+          border-radius: 12px;
+          cursor: pointer;
+          text-align: center;
+          color: #334155;
+          font-weight: 700;
+          font-size: 0.9rem;
+          transition: all 0.2s ease;
+        }
+        .szCatUploadLabel:hover {
+          border-color: #10b981;
+          background: #f0fdf4;
+          color: #047857;
+        }
+        .szUploadIcon {
+          font-size: 1.8rem;
+          margin-bottom: 4px;
+        }
+        .szCatUploadLabel small {
+          font-size: 0.75rem;
+          color: #94a3b8;
+          font-weight: 400;
+          margin-top: 4px;
+        }
+        .szCatImagePreviewCard {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          background: #ffffff;
+          padding: 8px 12px;
+          border-radius: 10px;
+          border: 1px solid #e2e8f0;
+        }
+        .szCatPreviewImg {
+          width: 48px;
+          height: 48px;
+          border-radius: 8px;
+          object-fit: cover;
+          border: 1px solid #cbd5e1;
+        }
+        .szCatRemoveImgBtn {
+          background: #fee2e2;
+          color: #ef4444;
+          border: none;
+          padding: 4px 10px;
+          border-radius: 6px;
+          font-weight: 700;
+          font-size: 0.8rem;
+          cursor: pointer;
+        }
+        .szCatRemoveImgBtn:hover {
+          background: #fecaca;
+        }
+        .szCatCustomImgWrap {
+          width: 44px;
+          height: 44px;
+          border-radius: 12px;
+          overflow: hidden;
+          background: #f1f5f9;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid #e2e8f0;
+          flex-shrink: 0;
+        }
+        .szCatCustomImg {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        @media (max-width: 768px) {
+          .szCatMediaFormSection {
+            grid-template-columns: 1fr;
+          }
+          .szEmojiPresetsGrid {
+            grid-template-columns: repeat(6, 1fr);
+          }
+        }
+      `}</style>
     </div>
   );
 }

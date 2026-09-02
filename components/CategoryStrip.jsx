@@ -29,17 +29,31 @@ const categoryGradients = {
   "قطع غيار السيارات": "linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%)",
 };
 
+import { resolveImageUrl } from "../lib/media";
+
 export default function CategoryStrip({ categories = [], categoryIcons = {} }) {
   const scrollRef = useRef(null);
 
   const items = useMemo(() => {
     const source = categories.length > 0 ? categories : Object.keys(categoryImages);
 
-    return source.map((name) => ({
-      name,
-      icon: categoryIcons[name] || categoryImages[name] || categoryImages["إلكترونيات"],
-      bg: categoryGradients[name] || "linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)",
-    }));
+    return source.map((cat) => {
+      const isObj = typeof cat === "object" && cat !== null;
+      const name = isObj ? cat.name : cat;
+      const customImg = isObj && cat.image ? resolveImageUrl(cat.image) : null;
+      const customIcon = isObj && cat.icon ? cat.icon : categoryIcons[name];
+      const fallbackImg = categoryImages[name] || categoryImages["إلكترونيات"];
+
+      const isImage = Boolean(customImg || (customIcon && (customIcon.startsWith("/") || customIcon.startsWith("http"))));
+      const iconValue = customImg || (isImage ? resolveImageUrl(customIcon) : (customIcon || fallbackImg));
+
+      return {
+        name,
+        icon: iconValue,
+        isImage: isImage || (typeof iconValue === "string" && (iconValue.startsWith("/") || iconValue.startsWith("http"))),
+        bg: categoryGradients[name] || "linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)",
+      };
+    });
   }, [categories, categoryIcons]);
 
   const scroll = (direction) => {
@@ -67,7 +81,11 @@ export default function CategoryStrip({ categories = [], categoryIcons = {} }) {
               key={item.name}
             >
               <div className="szCategoryIconWrap" style={{ background: item.bg }}>
-                <img src={item.icon} alt={item.name} loading="lazy" className="szCategoryIconImg" />
+                {item.isImage ? (
+                  <img src={item.icon} alt={item.name} loading="lazy" className="szCategoryIconImg" />
+                ) : (
+                  <span style={{ fontSize: "2rem", lineHeight: 1 }}>{item.icon}</span>
+                )}
               </div>
               <span className="szCategoryName">{item.name}</span>
             </Link>
