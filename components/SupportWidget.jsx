@@ -197,6 +197,18 @@ export default function SupportWidget() {
                 </svg>
               </button>
             </form>
+
+            {/* Social channels strip */}
+            <div className="szSupportSocialBar">
+              <span className="szSupportSocialTitle">تابعنا على:</span>
+              <div className="szSupportSocialIcons">
+                <a href="https://www.tiktok.com/@sudanzon" target="_blank" rel="noopener noreferrer" title="تيك توك @sudanzon">🎵 تيك توك</a>
+                <span>•</span>
+                <a href="https://www.youtube.com/@SudanZon" target="_blank" rel="noopener noreferrer" title="يوتيوب @SudanZon">📺 يوتيوب</a>
+                <span>•</span>
+                <a href="https://facebook.com/sudanzonsd/" target="_blank" rel="noopener noreferrer" title="فيسبوك sudanzonsd">📘 فيسبوك</a>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -626,6 +638,42 @@ export default function SupportWidget() {
 
         .szSupportSendBtn:hover {
           background: #059669;
+        }
+
+        .szSupportSocialBar {
+          padding: 8px 14px;
+          background: #f8fafc;
+          border-top: 1px solid #edf2f7;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          font-size: 0.72rem;
+        }
+
+        .szSupportSocialTitle {
+          font-weight: 700;
+          color: #64748b;
+        }
+
+        .szSupportSocialIcons {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .szSupportSocialIcons a {
+          color: #334155;
+          text-decoration: none;
+          font-weight: 700;
+          transition: color 0.15s ease;
+        }
+
+        .szSupportSocialIcons a:hover {
+          color: #10b981;
+        }
+
+        .szSupportSocialIcons span {
+          color: #cbd5e1;
         }
       `}</style>
     </aside>

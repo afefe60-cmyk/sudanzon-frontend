@@ -123,8 +123,10 @@ const jsonLd = {
         "url": "https://sudanzon.com/logo.png",
       },
       "sameAs": [
-        "https://facebook.com",
-        "https://wa.me/249907620105",
+        "https://facebook.com/sudanzonsd/",
+        "https://www.tiktok.com/@sudanzon",
+        "https://www.youtube.com/@SudanZon",
+        "https://wa.me/249907620105"
       ],
       "contactPoint": {
         "@type": "ContactPoint",

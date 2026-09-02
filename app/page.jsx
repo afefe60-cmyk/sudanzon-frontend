@@ -3,6 +3,7 @@ import CategoryStrip from "../components/CategoryStrip";
 import MarketPulse from "../components/MarketPulse";
 import PromoHeroSlider from "../components/PromoHeroSlider";
 import SiteHeader from "../components/SiteHeader";
+import SiteFooter from "../components/SiteFooter";
 import ProductCard from "../components/ProductCard";
 import { apiJson } from "../lib/api";
 import { categories as fallbackCategories, products as fallbackProducts } from "../lib/mock-data";
@@ -178,57 +179,7 @@ export default async function HomePage() {
       </section>
 
       {/* App Footer */}
-      <footer className="szFooter">
-        <div className="container szFooterInner">
-          <div className="szFooterBrand">
-            <Link href="/" className="szFooterLogoLink">
-              <img src="/logo.png" alt="سودان زون" className="szFooterLogoImg" />
-            </Link>
-            <p className="szFooterDesc">
-              المنصة السودانية الأولى المتكاملة للتجارة الإلكترونية متعددة البائعين. نربط التجار بالمشترين في بيئة آمنة وسهلة.
-            </p>
-            <div className="szPaymentBadges">
-              <span className="szPayBadge">💵 الدفع عند الاستلام</span>
-              <span className="szPayBadge">🏦 بنكك - Bankak</span>
-              <span className="szPayBadge">💳 بطاقات الصراف</span>
-            </div>
-          </div>
-
-          <div className="szFooterLinksGroup">
-            <strong>روابط سريعة</strong>
-            <Link href="/products">جميع المنتجات</Link>
-            <Link href="/products?q=عروض">عروض وخصومات</Link>
-            <Link href="/orders">متابعة شحنتك</Link>
-            <Link href="/cart">سلة الشراء</Link>
-          </div>
-
-          <div className="szFooterLinksGroup">
-            <strong>للبائعين والشركاء</strong>
-            <Link href="/auth/vendor">تسجيل متجر جديد</Link>
-            <Link href="/seller">لوحة البائع</Link>
-            <Link href="/shipping">خدمات التوصيل والشحن</Link>
-            <Link href="/terms">الشروط والأحكام</Link>
-          </div>
-
-          <div className="szFooterLinksGroup">
-            <strong>الدعم والمساعدة</strong>
-            <span>📞 الهاتف: 0907620105 - 0116731488</span>
-            <span>✉️ البريد: info@sudanzon.com</span>
-            <span>📍 الخرطوم، جمهورية السودان</span>
-          </div>
-        </div>
-
-        <div className="szFooterBottom">
-          <div className="container szFooterBottomInner">
-            <p>© {new Date().getFullYear()} سودان زون (SudanZon). جميع الحقوق محفوظة.</p>
-            <div className="szFooterBottomLinks">
-              <Link href="/privacy">سياسة الخصوصية</Link>
-              <span>•</span>
-              <Link href="/terms">اتفاقية الاستخدام</Link>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </main>
   );
 }
