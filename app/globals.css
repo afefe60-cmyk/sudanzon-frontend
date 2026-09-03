@@ -8691,7 +8691,7 @@ select {
 }
 
 /* --------------------------------------------------------
-   MEDIA QUERIES FOR SELLER HUB
+   MEDIA QUERIES FOR SELLER HUB (100% Mobile Responsive)
    -------------------------------------------------------- */
 @media (max-width: 1024px) {
   .szMerchantStatsGrid {
@@ -8702,31 +8702,170 @@ select {
   }
   .szProductFormWithPreview {
     grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
   }
   .szLivePreviewSticky {
     position: static;
+    width: 100%;
   }
 }
 
 @media (max-width: 768px) {
+  .szSellerDashboardSection {
+    padding: 16px 0 40px;
+    overflow-x: hidden;
+  }
   .szSellerHeaderBar {
     flex-direction: column;
     align-items: stretch;
+    padding: 18px 14px;
+    border-radius: 18px;
+    gap: 14px;
+  }
+  .szSellerDashboardTitle {
+    font-size: 1.35rem;
+  }
+  .szSellerDashboardSubtitle {
+    font-size: 0.82rem;
   }
   .szSellerHeaderQuickActions {
     flex-wrap: wrap;
+    gap: 8px;
+  }
+  .szHeaderActionBtn {
+    flex: 1 1 calc(50% - 6px);
+    justify-content: center;
+    font-size: 0.78rem;
+    padding: 8px 10px;
+    text-align: center;
+  }
+  .szSellerTabsNav {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 4px 2px 10px;
+    width: 100%;
+    scrollbar-width: none;
+  }
+  .szSellerTabsNav::-webkit-scrollbar {
+    display: none;
+  }
+  .szSellerTabBtn {
+    white-space: nowrap;
+    font-size: 0.8rem;
+    padding: 9px 14px;
+    flex-shrink: 0;
   }
   .szMerchantStatsGrid {
     grid-template-columns: 1fr;
+    gap: 12px;
   }
   .szMerchantProductsGrid {
     grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .szCatalogTopControls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .szCatalogSearchWrap {
+    width: 100%;
+  }
+  .szCatalogActionsRight {
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+  }
+  .szCatalogFilterSelect {
+    width: 100%;
+  }
+  .szAddProductCtaBtn {
+    width: 100%;
+    justify-content: center;
+  }
+  .szProductEditorCard {
+    padding: 18px 14px;
+    border-radius: 18px;
+    gap: 14px;
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+  .szEditorHeader h3 {
+    font-size: 1.15rem;
   }
   .szFormGrid2 {
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .szPhotoPresetsTrack {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 4px 2px 8px;
+    scrollbar-width: thin;
+  }
+  .szPresetPhotoBtn {
+    flex-shrink: 0;
+    min-width: 68px;
+  }
+  .szCustomUploadRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    width: 100%;
+  }
+  .szFileInput {
+    width: 100%;
+    max-width: 100%;
+    font-size: 0.78rem;
+  }
+  .szFormActionButtons {
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+  }
+  .szSubmitProductBtn {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 0.92rem;
+    text-align: center;
+  }
+  .szCancelFormBtn {
+    width: 100%;
+    padding: 10px 16px;
+    text-align: center;
+  }
+  .szLivePreviewSticky {
+    position: static;
+    width: 100%;
+    max-width: 100%;
+    margin-top: 10px;
+  }
+  .szLivePreviewCard {
+    padding: 16px 12px;
+    border-radius: 18px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .szMerchantCardActions {
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+  }
+  .szMerchantBtn {
+    padding: 8px 6px;
+    font-size: 0.74rem;
   }
   .szGuideCardsGrid {
     grid-template-columns: 1fr;
+    gap: 12px;
   }
 }
 
