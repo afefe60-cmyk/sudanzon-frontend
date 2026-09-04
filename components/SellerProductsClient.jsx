@@ -3,8 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { apiForm, apiJson } from "../lib/api";
-import { getProductImage, getProductImages } from "../lib/media";
+import { getProductImage, getProductImages, resolveImageUrl } from "../lib/media";
 import { products as fallbackProducts } from "../lib/mock-data";
+
+import MultiImageUploader from "./MultiImageUploader";
 
 const emptyForm = {
   id: "",
@@ -40,9 +42,8 @@ export default function SellerProductsClient() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [imagePreviews, setImagePreviews] = useState([]);
+  const [galleryImages, setGalleryImages] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [productImageFiles, setProductImageFiles] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("ALL");
 
@@ -98,34 +99,21 @@ export default function SellerProductsClient() {
     setForm((current) => ({ ...current, [name]: value }));
   };
 
-  const onImageChange = async (event) => {
-    const files = Array.from(event.target.files || []).slice(0, 4);
-    if (files.length === 0) {
-      setForm((current) => ({ ...current, image: "/products/electronics.jpg", images: [] }));
-      setImagePreviews([]);
-      setProductImageFiles([]);
-      return;
-    }
-
-    setProductImageFiles(files);
-    setImagePreviews(files.map((file) => URL.createObjectURL(file)));
-  };
-
   const selectPresetImage = (preset) => {
     setForm((current) => ({
       ...current,
       image: preset.path,
-      images: [preset.path],
       categoryName: preset.category,
     }));
-    setImagePreviews([preset.path]);
-    setProductImageFiles([]);
+    setGalleryImages((prev) => [
+      { id: "preset_" + preset.path, url: preset.path, file: null, isNew: false },
+      ...prev.filter((item) => item.url !== preset.path),
+    ]);
   };
 
   const resetForm = () => {
     setForm(emptyForm);
-    setImagePreviews([]);
-    setProductImageFiles([]);
+    setGalleryImages([]);
   };
 
   const submitForm = async (event) => {
@@ -142,11 +130,14 @@ export default function SellerProductsClient() {
     payload.append("categoryId", form.categoryId || "c1");
     payload.append("categoryName", form.categoryName.trim() || "عام");
 
-    if (productImageFiles.length) {
-      productImageFiles.forEach((file) => payload.append("imageFiles", file));
-    } else if (form.image) {
-      payload.append("image", form.image);
-      payload.append("images", JSON.stringify(form.images?.length ? form.images : [form.image]));
+    const newFiles = galleryImages.filter((item) => item.file).map((item) => item.file);
+    const existingImgs = galleryImages.filter((item) => !item.file && item.url).map((item) => item.url);
+
+    newFiles.forEach((file) => payload.append("imageFiles", file));
+    payload.append("existingImages", JSON.stringify(existingImgs));
+    payload.append("primaryIsNew", String(Boolean(galleryImages[0]?.file)));
+    if (galleryImages[0]?.url && !galleryImages[0]?.file) {
+      payload.append("primaryImage", galleryImages[0].url);
     }
 
     try {
@@ -170,20 +161,27 @@ export default function SellerProductsClient() {
   };
 
   const editProduct = (product) => {
+    const allImgs = getProductImages(product);
     setForm({
       id: product.id,
       name: product.name || "",
       description: product.description || "",
-      image: product.image || "/products/electronics.jpg",
-      images: Array.isArray(product.images) ? product.images : product.image ? [product.image] : [],
+      image: product.image || allImgs[0] || "/products/electronics.jpg",
+      images: allImgs,
       price: String(product.price ?? ""),
       discount: String(product.discount ?? "0"),
       stock: String(product.stock ?? "10"),
       categoryId: product.category?.id || "",
       categoryName: product.category?.name || product.category || "",
     });
-    setImagePreviews(getProductImages(product));
-    setProductImageFiles([]);
+    setGalleryImages(
+      allImgs.map((url, i) => ({
+        id: "img_" + i + "_" + url,
+        url,
+        file: null,
+        isNew: false,
+      }))
+    );
     setActiveTab("add");
   };
 
@@ -421,7 +419,7 @@ export default function SellerProductsClient() {
                     key={preset.path}
                     type="button"
                     onClick={() => selectPresetImage(preset)}
-                    className={`szPresetPhotoBtn ${form.image === preset.path ? "is-selected" : ""}`}
+                    className={`szPresetPhotoBtn ${galleryImages[0]?.url === preset.path ? "is-selected" : ""}`}
                   >
                     <img src={preset.path} alt={preset.name} />
                     <span>{preset.name}</span>
@@ -429,16 +427,13 @@ export default function SellerProductsClient() {
                 ))}
               </div>
 
-              <div className="szCustomUploadRow">
-                <span>أو ارفع من جهازك:</span>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  multiple
-                  onChange={onImageChange}
-                  className="szFileInput"
-                />
-              </div>
+              {/* Multi-Image Gallery Uploader with + Button */}
+              <MultiImageUploader
+                images={galleryImages}
+                onChange={setGalleryImages}
+                maxImages={8}
+                label="معرض صور المنتج (أضف حتى 8 صور وحدد الصورة الأساسية)"
+              />
             </div>
 
             <div className="szFormGrid2">
@@ -538,7 +533,15 @@ export default function SellerProductsClient() {
               <div className="szPreviewProductCard">
                 <div className="szPreviewImgWrap">
                   <img
-                    src={imagePreviews[0] || form.image || "/products/electronics.jpg"}
+                    src={
+                      galleryImages[0]?.url
+                        ? galleryImages[0].isNew
+                          ? galleryImages[0].url
+                          : resolveImageUrl(galleryImages[0].url)
+                        : form.image
+                        ? resolveImageUrl(form.image)
+                        : "/products/electronics.jpg"
+                    }
                     alt={form.name || "معاينة المنتج"}
                   />
                   {previewDiscount > 0 && <span className="szPreviewDiscountBadge">خصم {previewDiscount}%</span>}
