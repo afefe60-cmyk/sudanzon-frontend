@@ -8,16 +8,19 @@ import ProductCard from "../components/ProductCard";
 import { apiJson } from "../lib/api";
 import { categories as fallbackCategories, products as fallbackProducts } from "../lib/mock-data";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 async function loadHomeData() {
   try {
     const [productsResult, categoriesResult] = await Promise.all([
-      apiJson("/api/products"),
-      apiJson("/api/products/categories"),
+      apiJson("/api/products", { cache: "no-store" }),
+      apiJson("/api/products/categories", { cache: "no-store" }),
     ]);
 
     return {
       products: productsResult.items || [],
-      categories: (categoriesResult.items || []).map((item) => item.name || item),
+      categories: categoriesResult.items || [],
     };
   } catch {
     return {
