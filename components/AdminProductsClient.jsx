@@ -5,6 +5,8 @@ import Link from "next/link";
 import { apiForm, apiJson } from "../lib/api";
 import { getProductImage, getProductImages, parseImageList } from "../lib/media";
 
+import MultiImageUploader from "./MultiImageUploader";
+
 const emptyForm = {
   id: "",
   name: "",
@@ -26,8 +28,7 @@ export default function AdminProductsClient() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [imagePreviews, setImagePreviews] = useState([]);
-  const [productImageFiles, setProductImageFiles] = useState([]);
+  const [galleryImages, setGalleryImages] = useState([]);
   const [search, setSearch] = useState("");
   const [selectedCat, setSelectedCat] = useState("ALL");
   const [selectedVendorFilter, setSelectedVendorFilter] = useState("ALL");
@@ -82,30 +83,16 @@ export default function AdminProductsClient() {
     setForm((current) => ({ ...current, [name]: value }));
   };
 
-  const onImageChange = (event) => {
-    const files = Array.from(event.target.files || []).slice(0, 4);
-    if (files.length === 0) {
-      setProductImageFiles([]);
-      setImagePreviews([]);
-      return;
-    }
-
-    setProductImageFiles(files);
-    setImagePreviews(files.map((file) => URL.createObjectURL(file)));
-  };
-
   const resetForm = () => {
     setForm(emptyForm);
-    setImagePreviews([]);
-    setProductImageFiles([]);
+    setGalleryImages([]);
     setIsEditing(false);
     setShowModal(false);
   };
 
   const startCreateProduct = () => {
     setForm(emptyForm);
-    setImagePreviews([]);
-    setProductImageFiles([]);
+    setGalleryImages([]);
     setIsEditing(false);
     setShowModal(true);
   };
@@ -129,8 +116,14 @@ export default function AdminProductsClient() {
       vendorId: product.vendorId || product.vendor?.id || "",
     });
 
-    setImagePreviews(getProductImages(product));
-    setProductImageFiles([]);
+    setGalleryImages(
+      allImages.map((url, i) => ({
+        id: "img_" + i + "_" + url,
+        url,
+        file: null,
+        isNew: false,
+      }))
+    );
     setShowModal(true);
   };
 
@@ -150,11 +143,14 @@ export default function AdminProductsClient() {
       payload.append("vendorId", form.vendorId);
     }
 
-    if (productImageFiles.length) {
-      productImageFiles.forEach((file) => payload.append("imageFiles", file));
-    } else if (form.image) {
-      payload.append("image", form.image);
-      payload.append("images", JSON.stringify(form.images?.length ? form.images : [form.image]));
+    const newFiles = galleryImages.filter((item) => item.file).map((item) => item.file);
+    const existingImgs = galleryImages.filter((item) => !item.file && item.url).map((item) => item.url);
+
+    newFiles.forEach((file) => payload.append("imageFiles", file));
+    payload.append("existingImages", JSON.stringify(existingImgs));
+    payload.append("primaryIsNew", String(Boolean(galleryImages[0]?.file)));
+    if (galleryImages[0]?.url && !galleryImages[0]?.file) {
+      payload.append("primaryImage", galleryImages[0].url);
     }
 
     try {
@@ -378,28 +374,14 @@ export default function AdminProductsClient() {
             </div>
           </div>
 
-          {/* Image Upload Block */}
+          {/* Image Upload Block with Interactive Gallery */}
           <div className="szFormGroup">
-            <label className="szFormLabel">صور المنتج (حتى 4 صور عالية الدقة)</label>
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={onImageChange}
-              className="szFormInput"
+            <MultiImageUploader
+              images={galleryImages}
+              onChange={setGalleryImages}
+              maxImages={8}
+              label="صور المنتج (أضف حتى 8 صور مع تحديد الصورة الأساسية)"
             />
-            {imagePreviews.length > 0 && (
-              <div className="szImagePreviewGrid" style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
-                {imagePreviews.map((src, i) => (
-                  <img
-                    key={i}
-                    src={src}
-                    alt="معاينة"
-                    style={{ width: 70, height: 70, objectFit: "cover", borderRadius: 8, border: "1px solid #cbd5e1" }}
-                  />
-                ))}
-              </div>
-            )}
           </div>
 
           <div className="szFormActionButtons">
