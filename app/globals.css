@@ -6650,24 +6650,115 @@ select {
     grid-template-columns: 1fr;
   }
 
+  /* Section Headers on Mobile */
+  .szSectionHeaderRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .szSectionMainTitle {
+    font-size: 1.3rem;
+  }
+  .szSectionSubtitle {
+    font-size: 0.8rem;
+  }
+  .szSectionViewAllBtn {
+    align-self: flex-start;
+    font-size: 0.8rem;
+    padding: 6px 12px;
+  }
+
   /* Mobile 2-Column Product Grid (Like Native Apps) */
   .szProductGrid {
     grid-template-columns: repeat(2, 1fr) !important;
     gap: 10px;
   }
   .szProductCard {
-    padding: 10px;
-    border-radius: 16px;
+    padding: 0;
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
   }
-  .szProductThumbWrap {
-    height: 135px;
+  .szCardHeader {
+    top: 8px;
+    left: 8px;
+    right: 8px;
   }
-  .szProductCardTitle {
-    font-size: 0.82rem;
+  .szFavBtn {
+    width: 28px;
+    height: 28px;
+  }
+  .szBadge {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+  }
+  .szImageLink {
+    padding: 8px;
+  }
+  .szImageWrap {
+    height: 125px;
+  }
+  .szCardBody {
+    padding: 8px 8px 10px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+  .szCardMeta {
+    margin-bottom: 4px;
+  }
+  .szVendor {
+    font-size: 0.68rem;
+    padding: 1px 5px;
+  }
+  .szRating {
+    font-size: 0.72rem;
+  }
+  .szTitle {
+    font-size: 0.8rem;
     line-height: 1.35;
+    margin-bottom: 4px;
   }
-  .szPriceCurrent {
+  .szDescription {
+    display: none;
+  }
+  .szCardFooter {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    padding-top: 6px;
+    margin-top: auto;
+  }
+  .szPriceBlock {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+    width: 100%;
+  }
+  .szAmount {
     font-size: 0.95rem;
+  }
+  .szCurrency {
+    font-size: 0.68rem;
+  }
+  .szOldPrice {
+    font-size: 0.68rem;
+  }
+  .szAddCartBtn {
+    width: 100%;
+    justify-content: center;
+    padding: 6px 4px;
+    font-size: 0.76rem;
+    gap: 4px;
+    border-radius: 8px;
+    box-sizing: border-box;
+  }
+  .szAddCartBtn svg {
+    width: 13px;
+    height: 13px;
   }
 
   .szPulseContainer {
