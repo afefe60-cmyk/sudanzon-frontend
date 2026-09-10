@@ -100,9 +100,11 @@ export default function SiteFooter() {
 
         {/* Partners & Sellers */}
         <div className="szFooterLinksGroup">
-          <strong>للبائعين والشركاء</strong>
+          <strong>الشركاء والخدمات</strong>
           <Link href="/auth/vendor">تسجيل متجر جديد</Link>
           <Link href="/seller">لوحة تحكم البائع</Link>
+          <Link href="/auth/courier">انضم كمندوب / كابتن توصيل 🛵</Link>
+          <Link href="/courier">لوحة تحكم المندوب</Link>
           <Link href="/terms">الشروط والأحكام</Link>
           <Link href="/privacy">سياسة الخصوصية</Link>
         </div>
