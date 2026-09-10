@@ -142,6 +142,10 @@ function LoginFormContent() {
             <span>🏬 انضم كتاجر وبائع</span>
             <strong>فتح متجر معتمد</strong>
           </Link>
+          <Link href="/auth/courier" className="szRegisterCardBtn szRegisterCardBtn--courier" style={{ gridColumn: "1 / -1", textAlign: "center" }}>
+            <span>🛵 انضم ككابتن / شركة توصيل</span>
+            <strong>تسجيل مندوب شحن وتوصيل</strong>
+          </Link>
         </div>
       </div>
 
