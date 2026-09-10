@@ -21,6 +21,11 @@ export default function CourierRegisterClient() {
     isCompany: false,
   });
 
+  const [licenseFile, setLicenseFile] = useState(null);
+  const [licensePreview, setLicensePreview] = useState("");
+  const [vehicleFile, setVehicleFile] = useState(null);
+  const [vehiclePreview, setVehiclePreview] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -33,16 +38,54 @@ export default function CourierRegisterClient() {
     }));
   };
 
+  const handleLicenseChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setLicenseFile(file);
+      setLicensePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleVehicleChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setVehicleFile(file);
+      setVehiclePreview(URL.createObjectURL(file));
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
+    if (!formData.nationalId.trim()) {
+      setError("يرجى إدخال الرقم الوطني / الهوية الوطنية (إجباري)");
+      return;
+    }
+
+    if (!formData.vehiclePlate.trim()) {
+      setError("يرجى إدخال رقم اللوحة / الترخيص للمركبة (إجباري)");
+      return;
+    }
+
     setLoading(true);
 
     try {
+      const dataToSend = new FormData();
+      Object.keys(formData).forEach((key) => {
+        dataToSend.append(key, formData[key]);
+      });
+
+      if (licenseFile) {
+        dataToSend.append("licensePhotoFile", licenseFile);
+      }
+      if (vehicleFile) {
+        dataToSend.append("vehiclePhotoFile", vehicleFile);
+      }
+
       const res = await fetch(`${API_BASE}/api/couriers/register`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: dataToSend,
       });
 
       const data = await res.json();
@@ -97,10 +140,10 @@ export default function CourierRegisterClient() {
 
         <div className="szVendorFormContainer">
           <div className="szVendorFormWrapper">
-            <div className="szAuthCard" style={{ maxWidth: "600px", margin: "0 auto" }}>
+            <div className="szAuthCard" style={{ maxWidth: "680px", margin: "0 auto" }}>
               <div className="szAuthHeader">
                 <h2>🚀 تسجيل كابتن / شركة توصيل جديدة</h2>
-                <p>أدخل بياناتك لتفعيل حسابك والبدء في استلام وتوصيل الطلبات</p>
+                <p>أدخل بياناتك ووثائقك لتفعيل حسابك والبدء في استلام وتوصيل الطلبات</p>
               </div>
 
               {error && (
@@ -112,9 +155,9 @@ export default function CourierRegisterClient() {
               {success ? (
                 <div style={{ textAlign: "center", padding: "24px" }}>
                   <div style={{ fontSize: "48px", marginBottom: "16px" }}>🎉</div>
-                  <h3 style={{ fontSize: "20px", fontWeight: "bold", marginBottom: "8px" }}>تم استلام طلبك بنجاح!</h3>
+                  <h3 style={{ fontSize: "20px", fontWeight: "bold", marginBottom: "8px" }}>تم استلام طلبك ومستنداتك بنجاح!</h3>
                   <p style={{ color: "#475569", marginBottom: "20px" }}>
-                    حسابك الآن قيد الاعتماد من قبل إدارة سودان زون. سيتم التواصل معك عبر الواتساب وتفعيل حسابك لاستقبال الطلبات.
+                    حسابك الآن قيد الاعتماد والمراجعة من قبل إدارة سودان زون. سيتم مراجعة وثائقك وتفعيل حسابك فورياً.
                   </p>
                   <Link href="/courier" className="szBtn szBtnPrimary" style={{ display: "inline-block" }}>
                     الانتقال للوحة المندوب
@@ -240,41 +283,139 @@ export default function CourierRegisterClient() {
                       </select>
                     </div>
                     <div>
-                      <label style={{ display: "block", marginBottom: "4px", fontSize: "13px", fontWeight: "bold" }}>رقم اللوحة (اختياري)</label>
+                      <label style={{ display: "block", marginBottom: "4px", fontSize: "13px", fontWeight: "bold" }}>رقم اللوحة / الترخيص *</label>
                       <input
                         type="text"
                         name="vehiclePlate"
                         value={formData.vehiclePlate}
                         onChange={handleChange}
-                        placeholder="مثال: خ 12345"
+                        required
+                        placeholder="مثال: خ 12345 أو ش 9876"
                         style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1" }}
                       />
                     </div>
                   </div>
 
-                  <div>
-                    <label style={{ display: "block", marginBottom: "4px", fontSize: "13px", fontWeight: "bold" }}>الرقم الوطني / الهوية (اختياري)</label>
-                    <input
-                      type="text"
-                      name="nationalId"
-                      value={formData.nationalId}
-                      onChange={handleChange}
-                      placeholder="الرقم الوطني"
-                      style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1" }}
-                    />
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                    <div>
+                      <label style={{ display: "block", marginBottom: "4px", fontSize: "13px", fontWeight: "bold" }}>الرقم الوطني / الهوية الوطنية *</label>
+                      <input
+                        type="text"
+                        name="nationalId"
+                        value={formData.nationalId}
+                        onChange={handleChange}
+                        required
+                        placeholder="أدخل الرقم الوطني"
+                        style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: "block", marginBottom: "4px", fontSize: "13px", fontWeight: "bold" }}>كلمة المرور *</label>
+                      <input
+                        type="password"
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        required
+                        placeholder="اختر كلمة مرور"
+                        style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1" }}
+                      />
+                    </div>
                   </div>
 
-                  <div>
-                    <label style={{ display: "block", marginBottom: "4px", fontSize: "13px", fontWeight: "bold" }}>كلمة المرور *</label>
-                    <input
-                      type="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      required
-                      placeholder="اختر كلمة مرور قوية"
-                      style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1" }}
-                    />
+                  {/* Document & License Upload Cards */}
+                  <div style={{ background: "#f8fafc", border: "1px dashed #cbd5e1", borderRadius: "12px", padding: "14px", marginTop: "4px" }}>
+                    <div style={{ fontWeight: "bold", fontSize: "14px", color: "#1e293b", marginBottom: "10px" }}>
+                      📄 المستندات والوثائق الرسمية للتوثيق
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                      {/* Driver License Photo */}
+                      <div>
+                        <label style={{ display: "block", marginBottom: "4px", fontSize: "12px", fontWeight: "bold", color: "#475569" }}>
+                          صورة رخصة القيادة
+                        </label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLicenseChange}
+                          style={{ display: "none" }}
+                          id="licenseInput"
+                        />
+                        <label
+                          htmlFor="licenseInput"
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: "12px",
+                            border: "1px solid #cbd5e1",
+                            borderRadius: "8px",
+                            background: "#ffffff",
+                            cursor: "pointer",
+                            minHeight: "90px",
+                            textAlign: "center",
+                          }}
+                        >
+                          {licensePreview ? (
+                            <img
+                              src={licensePreview}
+                              alt="رخصة القيادة"
+                              style={{ maxHeight: "65px", maxWidth: "100%", objectFit: "contain", borderRadius: "4px" }}
+                            />
+                          ) : (
+                            <>
+                              <span style={{ fontSize: "22px" }}>🪪</span>
+                              <span style={{ fontSize: "11px", color: "#2563eb", marginTop: "4px" }}>اختر صورة الرخصة</span>
+                            </>
+                          )}
+                        </label>
+                      </div>
+
+                      {/* Vehicle Registration Photo */}
+                      <div>
+                        <label style={{ display: "block", marginBottom: "4px", fontSize: "12px", fontWeight: "bold", color: "#475569" }}>
+                          صورة استمارة / ملكية المركبة
+                        </label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleVehicleChange}
+                          style={{ display: "none" }}
+                          id="vehicleInput"
+                        />
+                        <label
+                          htmlFor="vehicleInput"
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: "12px",
+                            border: "1px solid #cbd5e1",
+                            borderRadius: "8px",
+                            background: "#ffffff",
+                            cursor: "pointer",
+                            minHeight: "90px",
+                            textAlign: "center",
+                          }}
+                        >
+                          {vehiclePreview ? (
+                            <img
+                              src={vehiclePreview}
+                              alt="استمارة المركبة"
+                              style={{ maxHeight: "65px", maxWidth: "100%", objectFit: "contain", borderRadius: "4px" }}
+                            />
+                          ) : (
+                            <>
+                              <span style={{ fontSize: "22px" }}>📋</span>
+                              <span style={{ fontSize: "11px", color: "#2563eb", marginTop: "4px" }}>اختر صورة الاستمارة</span>
+                            </>
+                          )}
+                        </label>
+                      </div>
+                    </div>
                   </div>
 
                   <button
@@ -283,7 +424,7 @@ export default function CourierRegisterClient() {
                     className="szBtn szBtnPrimary"
                     style={{ width: "100%", padding: "12px", fontSize: "16px", fontWeight: "bold", marginTop: "10px" }}
                   >
-                    {loading ? "جارِ إنشاء الحساب..." : "🚀 تسجيل الحساب والانضمام للمنظومة"}
+                    {loading ? "جارِ رفع المستندات والتسجيل..." : "🚀 تسجيل الحساب والانضمام للمنظومة"}
                   </button>
 
                   <div style={{ textAlign: "center", marginTop: "12px", fontSize: "14px" }}>
