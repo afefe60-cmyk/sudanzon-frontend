@@ -78,9 +78,11 @@ export default function SiteHeader() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [browserPermission, setBrowserPermission] = useState("default");
+  const [lastNotificationId, setLastNotificationId] = useState(null);
 
   const canSeeItem = (item) => !item.roles || (currentRole && item.roles.includes(currentRole));
-  const canSeeNotifications = Boolean(currentUser && ["ADMIN", "VENDOR"].includes(currentRole));
+  const canSeeNotifications = Boolean(currentUser);
   const visibleNavItems = useMemo(() => navItems.filter(canSeeItem), [currentRole]);
   const visibleMegaMenuGroups = useMemo(
     () =>
@@ -92,6 +94,38 @@ export default function SiteHeader() {
         .filter((group) => group.links.length > 0),
     [currentRole]
   );
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      setBrowserPermission(Notification.permission);
+    } else {
+      setBrowserPermission("unsupported");
+    }
+  }, []);
+
+  const requestBrowserNotificationPermission = async () => {
+    if (typeof window === "undefined" || !("Notification" in window)) {
+      alert("متصفحك الحالي لا يدعم إشعارات المتصفح.");
+      return;
+    }
+
+    try {
+      const permission = await Notification.requestPermission();
+      setBrowserPermission(permission);
+      if (permission === "granted") {
+        try {
+          new Notification("سودان زون | SudanZon 🔔", {
+            body: "تم تفعيل إشعارات المتصفح بنجاح! ستصلك تنبيهات فورية بالطلبات والمبيعات وتحديثات الشحن.",
+            icon: "/icon.png",
+          });
+        } catch (e) {
+          console.log(e);
+        }
+      }
+    } catch (err) {
+      console.error("Notification permission error:", err);
+    }
+  };
 
   const loadNotifications = useCallback(async () => {
     if (!canSeeNotifications) {
@@ -109,21 +143,42 @@ export default function SiteHeader() {
 
     setNotificationsLoading(true);
     try {
-      const result = await apiJson("/api/notifications?limit=6", {
+      const result = await apiJson("/api/notifications?limit=8", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      setNotifications(result.items || []);
-      setUnreadCount(Number(result.unreadCount || 0));
+      const items = result.items || [];
+      setNotifications(items);
+      const newUnread = Number(result.unreadCount || 0);
+      setUnreadCount(newUnread);
+
+      // Trigger native browser notification if a new unread item arrived
+      if (items.length > 0) {
+        const latest = items[0];
+        if (!latest.readAt && latest.id !== lastNotificationId) {
+          setLastNotificationId(latest.id);
+          if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+            try {
+              new Notification(latest.title || "تنبيه جديد من سودان زون", {
+                body: latest.message || "",
+                icon: "/icon.png",
+                tag: latest.id,
+              });
+            } catch (err) {
+              console.log(err);
+            }
+          }
+        }
+      }
     } catch {
       setNotifications([]);
       setUnreadCount(0);
     } finally {
       setNotificationsLoading(false);
     }
-  }, [canSeeNotifications]);
+  }, [canSeeNotifications, lastNotificationId]);
 
   const markNotificationRead = async (notificationId) => {
     const token = window.localStorage.getItem("sudanzonToken");
@@ -383,6 +438,42 @@ export default function SiteHeader() {
                         قراءة الكل
                       </button>
                     </div>
+
+                    {browserPermission !== "granted" && browserPermission !== "unsupported" && (
+                      <div
+                        style={{
+                          background: "#eff6ff",
+                          borderBottom: "1px solid #dbeafe",
+                          padding: "10px 12px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: "8px",
+                        }}
+                      >
+                        <div style={{ fontSize: "11px", color: "#1e40af", lineHeight: "1.4" }}>
+                          🔔 <strong>تفعيل الإشعارات:</strong> احصل على تنبيهات بالطلبات والمبيعات فورياً على جهازك.
+                        </div>
+                        <button
+                          type="button"
+                          onClick={requestBrowserNotificationPermission}
+                          style={{
+                            background: "#2563eb",
+                            color: "#ffffff",
+                            border: "none",
+                            borderRadius: "6px",
+                            padding: "4px 8px",
+                            fontSize: "11px",
+                            fontWeight: "bold",
+                            cursor: "pointer",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          تفعيل
+                        </button>
+                      </div>
+                    )}
+
                     <div className="szNotifList">
                       {notificationsLoading ? (
                         <p className="szNotifEmpty">جارِ تحميل الإشعارات...</p>
