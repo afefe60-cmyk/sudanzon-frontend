@@ -117,17 +117,23 @@ export default function PromoHeroSlider() {
   const dealHref = deal ? `/products/${deal.slug || deal.id}` : "/products?category=أحذية";
   const dealTag = deal?.tag || "صفقة اليوم السريعة 🔥";
 
-  const pop = spotlight?.mostPopular;
+  const pop = spotlight?.specialOffer || spotlight?.mostPopular;
+  const isSpecial = Boolean(spotlight?.specialOffer);
+
   const popImage = pop ? getProductImage(pop) : "/banners/side-2.jpg";
   const popTitle = pop ? pop.name : "ساعات ذكية وملحقات هواتف";
   const popPrice = pop ? `${Number(pop.price).toLocaleString()} ج.س` : "تبدأ من 18,500 ج.س";
-  const popBadge = pop?.isActualBestSeller
+  const popBadge = isSpecial
+    ? (pop.discountPercent ? `خصم ${pop.discountPercent}%` : "عرض خاص")
+    : pop?.isActualBestSeller
     ? `مباع ${pop.totalSold} مرة`
     : pop
     ? "الأكثر طلباً"
     : "جديد";
   const popHref = pop ? `/products/${pop.slug || pop.id}` : "/products?category=إلكترونيات";
-  const popTag = pop?.tag || "الأكثر طلباً ⚡";
+  const popTag = isSpecial
+    ? (spotlight?.specialOffer?.tag || "العرض الخاص ⭐")
+    : (pop?.tag || "الأكثر طلباً ⚡");
 
   return (
     <section className="szHeroMasterSection">
@@ -246,11 +252,11 @@ export default function PromoHeroSlider() {
               </div>
             </Link>
 
-            {/* Side Card 2: Most Popular */}
-            <Link href={popHref} className="szSideDealCard szSideDealCard--tech">
+            {/* Side Card 2: Special Offer or Most Popular */}
+            <Link href={popHref} className={`szSideDealCard ${isSpecial ? "szSideDealCard--gold" : "szSideDealCard--tech"}`}>
               <div className="szSideCardImageWrap">
                 <img src={popImage} alt={popTitle} />
-                <span className="szSideBadge szSideBadge--blue">{popBadge}</span>
+                <span className={`szSideBadge ${isSpecial ? "" : "szSideBadge--blue"}`}>{popBadge}</span>
               </div>
               <div className="szSideCardBody">
                 <span className="szSideSuperTag">{popTag}</span>

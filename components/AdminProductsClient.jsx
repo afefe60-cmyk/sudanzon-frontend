@@ -61,15 +61,32 @@ export default function AdminProductsClient() {
   const makeDealOfTheDay = async (product) => {
     try {
       setSettingSpotlight(true);
-      await apiJson("/api/admin/spotlight/deal-of-the-day", {
+      const res = await apiJson("/api/admin/spotlight/deal-of-the-day", {
         method: "POST",
         headers: { Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify({ productId: product.id }),
       });
-      setMessage(`🔥 تم تعيين "${product.name}" كـ صفقة اليوم بنجاح وستظهر فوراً في واجهة المتجر الرئيسية!`);
+      setMessage(res.message || `🔥 تم تحديث صفقة اليوم بنجاح!`);
       await loadSpotlightInfo();
     } catch (error) {
       setMessage(error.message || "تعذر تعيين صفقة اليوم");
+    } finally {
+      setSettingSpotlight(false);
+    }
+  };
+
+  const makeSpecialOffer = async (product) => {
+    try {
+      setSettingSpotlight(true);
+      const res = await apiJson("/api/admin/spotlight/special-offer", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ productId: product.id }),
+      });
+      setMessage(res.message || `⭐ تم تحديث العرض الخاص بنجاح!`);
+      await loadSpotlightInfo();
+    } catch (error) {
+      setMessage(error.message || "تعذر تعيين العرض الخاص");
     } finally {
       setSettingSpotlight(false);
     }
@@ -320,21 +337,22 @@ export default function AdminProductsClient() {
           marginBottom: "20px",
           color: "#fff",
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
           gap: "16px",
-          alignItems: "center",
+          alignItems: "stretch",
           boxShadow: "0 4px 14px rgba(0,0,0,0.12)",
           border: "1px solid #334155",
         }}
       >
+        {/* Deal of the Day Card */}
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <div
             style={{
-              fontSize: "28px",
+              fontSize: "26px",
               background: "rgba(245, 158, 11, 0.15)",
               borderRadius: "12px",
-              width: "48px",
-              height: "48px",
+              width: "46px",
+              height: "46px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -344,28 +362,39 @@ export default function AdminProductsClient() {
           >
             🔥
           </div>
-          <div>
-            <div style={{ fontSize: "12px", color: "#fbbf24", fontWeight: 700 }}>
-              صفقة اليوم المعروضة في الواجهة الرئيسية
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: "11px", color: "#fbbf24", fontWeight: 700 }}>
+              صفقة اليوم المعروضة (الكارد الأول)
             </div>
-            <div style={{ fontSize: "14px", fontWeight: 600, color: "#f8fafc", marginTop: "2px" }}>
+            <div
+              style={{
+                fontSize: "13px",
+                fontWeight: 600,
+                color: "#f8fafc",
+                marginTop: "2px",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
               {spotlightInfo?.dealOfTheDayProduct ? (
                 <>
                   <span>{spotlightInfo.dealOfTheDayProduct.name}</span>
-                  <span style={{ marginRight: "8px", color: "#38bdf8", fontSize: "12px" }}>
+                  <span style={{ marginRight: "6px", color: "#38bdf8", fontSize: "12px" }}>
                     ({Number(spotlightInfo.dealOfTheDayProduct.price).toLocaleString()} ج.س)
                   </span>
                 </>
               ) : (
-                <span style={{ color: "#94a3b8" }}>تلقائي (أحدث منتج بالمنصة)</span>
+                <span style={{ color: "#94a3b8" }}>تلقائي (أحدث منتج)</span>
               )}
             </div>
             <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "2px" }}>
-              💡 لتعيين أي منتج كـ "صفقة اليوم"، اضغط زر «🔥 صفقة اليوم» بجوار أي منتج في الجدول أدناه.
+              💡 اضغط «🔥 صفقة اليوم» بالجدول للتعيين أو الإلغاء.
             </div>
           </div>
         </div>
 
+        {/* Special Offer Card */}
         <div
           style={{
             display: "flex",
@@ -377,51 +406,119 @@ export default function AdminProductsClient() {
         >
           <div
             style={{
-              fontSize: "28px",
-              background: "rgba(56, 189, 248, 0.15)",
+              fontSize: "26px",
+              background: "rgba(2, 132, 199, 0.15)",
               borderRadius: "12px",
-              width: "48px",
-              height: "48px",
+              width: "46px",
+              height: "46px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              border: "1px solid rgba(56, 189, 248, 0.3)",
+              border: "1px solid rgba(2, 132, 199, 0.3)",
+              flexShrink: 0,
+            }}
+          >
+            ⭐
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: "11px", color: "#38bdf8", fontWeight: 700 }}>
+              العرض الخاص المعروض (الكارد الثاني)
+            </div>
+            <div
+              style={{
+                fontSize: "13px",
+                fontWeight: 600,
+                color: "#f8fafc",
+                marginTop: "2px",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {spotlightInfo?.specialOfferProduct ? (
+                <>
+                  <span>{spotlightInfo.specialOfferProduct.name}</span>
+                  <span style={{ marginRight: "6px", color: "#38bdf8", fontSize: "12px" }}>
+                    ({Number(spotlightInfo.specialOfferProduct.price).toLocaleString()} ج.س)
+                  </span>
+                </>
+              ) : (
+                <span style={{ color: "#94a3b8" }}>تلقائي (الأكثر طلباً)</span>
+              )}
+            </div>
+            <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "2px" }}>
+              💡 اضغط «⭐ العرض الخاص» بالجدول للتعيين أو الإلغاء.
+            </div>
+          </div>
+        </div>
+
+        {/* Dynamic Most Popular Stats */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            borderRight: "1px solid #334155",
+            paddingRight: "16px",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "26px",
+              background: "rgba(16, 185, 129, 0.15)",
+              borderRadius: "12px",
+              width: "46px",
+              height: "46px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: "1px solid rgba(16, 185, 129, 0.3)",
               flexShrink: 0,
             }}
           >
             ⚡
           </div>
-          <div>
-            <div style={{ fontSize: "12px", color: "#38bdf8", fontWeight: 700 }}>
-              المنتج الأكثر طلباً (تلقائي ذكي)
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: "11px", color: "#34d399", fontWeight: 700 }}>
+              الأكثر طلباً الفعلي (من الطلبات)
             </div>
-            <div style={{ fontSize: "14px", fontWeight: 600, color: "#f8fafc", marginTop: "2px" }}>
+            <div
+              style={{
+                fontSize: "13px",
+                fontWeight: 600,
+                color: "#f8fafc",
+                marginTop: "2px",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
               {spotlightInfo?.mostPopularProduct ? (
                 <>
                   <span>{spotlightInfo.mostPopularProduct.name}</span>
                   {spotlightInfo.mostPopularSalesCount > 0 && (
                     <span
                       style={{
-                        marginRight: "8px",
-                        background: "#0284c7",
+                        marginRight: "6px",
+                        background: "#059669",
                         color: "#fff",
-                        padding: "2px 8px",
-                        borderRadius: "10px",
+                        padding: "1px 6px",
+                        borderRadius: "8px",
                         fontSize: "11px",
                       }}
                     >
-                      تم شراؤه {spotlightInfo.mostPopularSalesCount} مرة
+                      {spotlightInfo.mostPopularSalesCount} طلب
                     </span>
                   )}
                 </>
               ) : (
-                <span style={{ color: "#94a3b8" }}>يعرض حالياً المنتجات المميزة</span>
+                <span style={{ color: "#94a3b8" }}>لا توجد طلبات بعد</span>
               )}
             </div>
             <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "2px" }}>
               {spotlightInfo?.mostPopularSalesCount > 0
-                ? "✓ يتم تحديثه تلقائياً بناءً على إحصائيات الطلبات الحقيقية."
-                : "ℹ️ لا توجد طلبات بعد - بمجرد ورود أي طلب لمنتج سيتم عرضه هنا فوراً."}
+                ? "✓ يعتمد تلقائياً على الطلبات الحقيقية."
+                : "ℹ️ يستبدل تلقائياً مع ورود أول طلب شراء."}
             </div>
           </div>
         </div>
@@ -570,7 +667,7 @@ export default function AdminProductsClient() {
                   <th>التصنيف</th>
                   <th>السعر</th>
                   <th>المخزون</th>
-                  <th>إجراءات الإدارة</th>
+                  <th style={{ textAlign: "center" }}>إجراءات الإدارة</th>
                 </tr>
               </thead>
               <tbody>
@@ -578,6 +675,10 @@ export default function AdminProductsClient() {
                   const isDealOfTheDay =
                     spotlightInfo?.config?.dealOfTheDayProductId === product.id ||
                     spotlightInfo?.dealOfTheDayProduct?.id === product.id;
+
+                  const isSpecialOffer =
+                    spotlightInfo?.config?.specialOfferProductId === product.id ||
+                    spotlightInfo?.specialOfferProduct?.id === product.id;
 
                   return (
                     <tr key={product.id}>
@@ -603,9 +704,28 @@ export default function AdminProductsClient() {
                                     display: "inline-flex",
                                     alignItems: "center",
                                     gap: "2px",
+                                    boxShadow: "0 1px 4px rgba(245, 158, 11, 0.3)",
                                   }}
                                 >
                                   🔥 صفقة اليوم
+                                </span>
+                              )}
+                              {isSpecialOffer && (
+                                <span
+                                  style={{
+                                    background: "linear-gradient(135deg, #0284c7, #0369a1)",
+                                    color: "#fff",
+                                    fontSize: "10px",
+                                    fontWeight: "bold",
+                                    padding: "2px 6px",
+                                    borderRadius: "6px",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "2px",
+                                    boxShadow: "0 1px 4px rgba(2, 132, 199, 0.3)",
+                                  }}
+                                >
+                                  ⭐ العرض الخاص
                                 </span>
                               )}
                             </div>
@@ -636,37 +756,113 @@ export default function AdminProductsClient() {
                         </span>
                       </td>
                       <td>
-                        <div className="szCatCardBtns" style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "6px",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {/* 🔥 صفقة اليوم */}
                           <button
                             type="button"
                             onClick={() => makeDealOfTheDay(product)}
                             disabled={settingSpotlight}
-                            className="szCatMiniBtn"
                             style={{
-                              background: isDealOfTheDay ? "#fef3c7" : "#f8fafc",
-                              color: isDealOfTheDay ? "#b45309" : "#0f766e",
-                              borderColor: isDealOfTheDay ? "#f59e0b" : "#cbd5e1",
-                              fontWeight: isDealOfTheDay ? "bold" : "normal",
+                              background: isDealOfTheDay ? "#fef3c7" : "#fff",
+                              color: isDealOfTheDay ? "#b45309" : "#475569",
+                              border: `1.5px solid ${isDealOfTheDay ? "#f59e0b" : "#e2e8f0"}`,
+                              fontWeight: isDealOfTheDay ? 700 : 500,
+                              borderRadius: "8px",
+                              padding: "6px 10px",
+                              fontSize: "12px",
+                              cursor: "pointer",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "4px",
+                              transition: "all 0.15s ease",
+                              boxShadow: isDealOfTheDay ? "0 2px 6px rgba(245, 158, 11, 0.25)" : "none",
                             }}
-                            title="تعيين هذا المنتج كـ صفقة اليوم في واجهة الموقع"
+                            title={isDealOfTheDay ? "إلغاء تعيين صفقة اليوم" : "تعيين هذا المنتج كـ صفقة اليوم في الصفحة الرئيسية"}
                           >
-                            {isDealOfTheDay ? "★ صفقة اليوم" : "🔥 صفقة اليوم"}
+                            <span>🔥</span>
+                            <span>{isDealOfTheDay ? "صفقة اليوم" : "صفقة اليوم"}</span>
                           </button>
+
+                          {/* ⭐ العرض الخاص */}
+                          <button
+                            type="button"
+                            onClick={() => makeSpecialOffer(product)}
+                            disabled={settingSpotlight}
+                            style={{
+                              background: isSpecialOffer ? "#e0f2fe" : "#fff",
+                              color: isSpecialOffer ? "#0369a1" : "#475569",
+                              border: `1.5px solid ${isSpecialOffer ? "#0284c7" : "#e2e8f0"}`,
+                              fontWeight: isSpecialOffer ? 700 : 500,
+                              borderRadius: "8px",
+                              padding: "6px 10px",
+                              fontSize: "12px",
+                              cursor: "pointer",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "4px",
+                              transition: "all 0.15s ease",
+                              boxShadow: isSpecialOffer ? "0 2px 6px rgba(2, 132, 199, 0.25)" : "none",
+                            }}
+                            title={isSpecialOffer ? "إلغاء تعيين العرض الخاص" : "تعيين هذا المنتج كـ عرض خاص في الصفحة الرئيسية"}
+                          >
+                            <span>⭐</span>
+                            <span>{isSpecialOffer ? "العرض الخاص" : "العرض الخاص"}</span>
+                          </button>
+
+                          {/* ✏️ تعديل */}
                           <button
                             type="button"
                             onClick={() => editProduct(product)}
-                            className="szCatMiniBtn szCatMiniBtn--edit"
-                            title="تعديل المنتج"
+                            style={{
+                              background: "#ecfdf5",
+                              color: "#047857",
+                              border: "1.5px solid #a7f3d0",
+                              fontWeight: 600,
+                              borderRadius: "8px",
+                              padding: "6px 12px",
+                              fontSize: "12px",
+                              cursor: "pointer",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "4px",
+                              transition: "all 0.15s ease",
+                            }}
+                            title="تعديل بيانات وصور المنتج"
                           >
-                            تعديل
+                            <span>✏️</span>
+                            <span>تعديل</span>
                           </button>
+
+                          {/* 🗑️ حذف */}
                           <button
                             type="button"
                             onClick={() => removeProduct(product)}
-                            className="szCatMiniBtn szCatMiniBtn--delete"
-                            title="حذف المنتج"
+                            style={{
+                              background: "#fef2f2",
+                              color: "#b91c1c",
+                              border: "1.5px solid #fecaca",
+                              fontWeight: 600,
+                              borderRadius: "8px",
+                              padding: "6px 12px",
+                              fontSize: "12px",
+                              cursor: "pointer",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "4px",
+                              transition: "all 0.15s ease",
+                            }}
+                            title="حذف المنتج نهائياً"
                           >
-                            حذف
+                            <span>🗑️</span>
+                            <span>حذف</span>
                           </button>
                         </div>
                       </td>
