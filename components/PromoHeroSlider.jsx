@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { apiJson } from "../lib/api";
+import { getProductImage } from "../lib/media";
 
 const slides = [
   {
@@ -42,11 +44,28 @@ const slides = [
 export default function PromoHeroSlider() {
   const [active, setActive] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [spotlight, setSpotlight] = useState(null);
   const timerRef = useRef(null);
   const progressIntervalRef = useRef(null);
 
   const duration = 6500; // ms per slide
   const stepTime = 50;
+
+  useEffect(() => {
+    let isMounted = true;
+    apiJson("/api/products/spotlight")
+      .then((data) => {
+        if (isMounted && data) {
+          setSpotlight(data);
+        }
+      })
+      .catch(() => {
+        // Fallback gracefully to default presets
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const resetTimer = () => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -88,6 +107,27 @@ export default function PromoHeroSlider() {
   };
 
   const slide = slides[active];
+
+  // Dynamic Spotlight Deal of the Day & Most Popular
+  const deal = spotlight?.dealOfTheDay;
+  const dealImage = deal ? getProductImage(deal) : "/banners/side-1.jpg";
+  const dealTitle = deal ? deal.name : "أحذية رياضية وسنيكرز أصلية";
+  const dealPrice = deal ? `${Number(deal.price).toLocaleString()} ج.س` : "تبدأ من 27,000 ج.س";
+  const dealBadge = deal?.discountPercent ? `خصم ${deal.discountPercent}%` : "خصم 35%";
+  const dealHref = deal ? `/products/${deal.slug || deal.id}` : "/products?category=أحذية";
+  const dealTag = deal?.tag || "صفقة اليوم السريعة 🔥";
+
+  const pop = spotlight?.mostPopular;
+  const popImage = pop ? getProductImage(pop) : "/banners/side-2.jpg";
+  const popTitle = pop ? pop.name : "ساعات ذكية وملحقات هواتف";
+  const popPrice = pop ? `${Number(pop.price).toLocaleString()} ج.س` : "تبدأ من 18,500 ج.س";
+  const popBadge = pop?.isActualBestSeller
+    ? `مباع ${pop.totalSold} مرة`
+    : pop
+    ? "الأكثر طلباً"
+    : "جديد";
+  const popHref = pop ? `/products/${pop.slug || pop.id}` : "/products?category=إلكترونيات";
+  const popTag = pop?.tag || "الأكثر طلباً ⚡";
 
   return (
     <section className="szHeroMasterSection">
@@ -190,33 +230,33 @@ export default function PromoHeroSlider() {
 
           {/* Side Highlights Column (30%) */}
           <aside className="szHeroSideDeals">
-            {/* Side Card 1 */}
-            <Link href="/products?category=أحذية" className="szSideDealCard szSideDealCard--gold">
+            {/* Side Card 1: Deal of the Day */}
+            <Link href={dealHref} className="szSideDealCard szSideDealCard--gold">
               <div className="szSideCardImageWrap">
-                <img src="/banners/side-1.jpg" alt="عروض الأحذية الرياضية" />
-                <span className="szSideBadge">خصم 35%</span>
+                <img src={dealImage} alt={dealTitle} />
+                <span className="szSideBadge">{dealBadge}</span>
               </div>
               <div className="szSideCardBody">
-                <span className="szSideSuperTag">صفقة اليوم السريعة 🔥</span>
-                <strong className="szSideTitle">أحذية رياضية وسنيكرز أصلية</strong>
+                <span className="szSideSuperTag">{dealTag}</span>
+                <strong className="szSideTitle">{dealTitle}</strong>
                 <div className="szSideActionRow">
-                  <span className="szSidePrice">تبدأ من 27,000 ج.س</span>
+                  <span className="szSidePrice">{dealPrice}</span>
                   <span className="szSideLinkText">تسوق الآن ❯</span>
                 </div>
               </div>
             </Link>
 
-            {/* Side Card 2 */}
-            <Link href="/products?category=إلكترونيات" className="szSideDealCard szSideDealCard--tech">
+            {/* Side Card 2: Most Popular */}
+            <Link href={popHref} className="szSideDealCard szSideDealCard--tech">
               <div className="szSideCardImageWrap">
-                <img src="/banners/side-2.jpg" alt="ساعات ذكية وإلكترونيات" />
-                <span className="szSideBadge szSideBadge--blue">جديد</span>
+                <img src={popImage} alt={popTitle} />
+                <span className="szSideBadge szSideBadge--blue">{popBadge}</span>
               </div>
               <div className="szSideCardBody">
-                <span className="szSideSuperTag">الأكثر طلباً ⚡</span>
-                <strong className="szSideTitle">ساعات ذكية وملحقات هواتف</strong>
+                <span className="szSideSuperTag">{popTag}</span>
+                <strong className="szSideTitle">{popTitle}</strong>
                 <div className="szSideActionRow">
-                  <span className="szSidePrice">تبدأ من 18,500 ج.س</span>
+                  <span className="szSidePrice">{popPrice}</span>
                   <span className="szSideLinkText">استكشف ❯</span>
                 </div>
               </div>

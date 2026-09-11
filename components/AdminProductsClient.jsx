@@ -34,8 +34,46 @@ export default function AdminProductsClient() {
   const [selectedVendorFilter, setSelectedVendorFilter] = useState("ALL");
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [spotlightInfo, setSpotlightInfo] = useState(null);
+  const [settingSpotlight, setSettingSpotlight] = useState(false);
 
   const getToken = () => (typeof window === "undefined" ? "" : localStorage.getItem("sudanzonToken") || "");
+
+  const loadSpotlightInfo = async () => {
+    try {
+      const result = await apiJson("/api/admin/spotlight", {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      setSpotlightInfo(result);
+    } catch {
+      try {
+        const publicRes = await apiJson("/api/products/spotlight");
+        setSpotlightInfo({
+          dealOfTheDayProduct: publicRes.dealOfTheDay,
+          mostPopularProduct: publicRes.mostPopular,
+          mostPopularSalesCount: publicRes.mostPopular?.totalSold || 0,
+          config: publicRes.config,
+        });
+      } catch {}
+    }
+  };
+
+  const makeDealOfTheDay = async (product) => {
+    try {
+      setSettingSpotlight(true);
+      await apiJson("/api/admin/spotlight/deal-of-the-day", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ productId: product.id }),
+      });
+      setMessage(`🔥 تم تعيين "${product.name}" كـ صفقة اليوم بنجاح وستظهر فوراً في واجهة المتجر الرئيسية!`);
+      await loadSpotlightInfo();
+    } catch (error) {
+      setMessage(error.message || "تعذر تعيين صفقة اليوم");
+    } finally {
+      setSettingSpotlight(false);
+    }
+  };
 
   const loadProducts = async () => {
     setLoading(true);
@@ -76,6 +114,7 @@ export default function AdminProductsClient() {
     loadProducts();
     loadCategories();
     loadVendors();
+    loadSpotlightInfo();
   }, []);
 
   const onChange = (event) => {
@@ -271,6 +310,123 @@ export default function AdminProductsClient() {
 
       {message && <div className="szAdminAlert">{message}</div>}
 
+      {/* Spotlight Control Banner */}
+      <div
+        className="szAdminSpotlightBanner"
+        style={{
+          background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+          borderRadius: "16px",
+          padding: "16px 20px",
+          marginBottom: "20px",
+          color: "#fff",
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          gap: "16px",
+          alignItems: "center",
+          boxShadow: "0 4px 14px rgba(0,0,0,0.12)",
+          border: "1px solid #334155",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div
+            style={{
+              fontSize: "28px",
+              background: "rgba(245, 158, 11, 0.15)",
+              borderRadius: "12px",
+              width: "48px",
+              height: "48px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: "1px solid rgba(245, 158, 11, 0.3)",
+              flexShrink: 0,
+            }}
+          >
+            🔥
+          </div>
+          <div>
+            <div style={{ fontSize: "12px", color: "#fbbf24", fontWeight: 700 }}>
+              صفقة اليوم المعروضة في الواجهة الرئيسية
+            </div>
+            <div style={{ fontSize: "14px", fontWeight: 600, color: "#f8fafc", marginTop: "2px" }}>
+              {spotlightInfo?.dealOfTheDayProduct ? (
+                <>
+                  <span>{spotlightInfo.dealOfTheDayProduct.name}</span>
+                  <span style={{ marginRight: "8px", color: "#38bdf8", fontSize: "12px" }}>
+                    ({Number(spotlightInfo.dealOfTheDayProduct.price).toLocaleString()} ج.س)
+                  </span>
+                </>
+              ) : (
+                <span style={{ color: "#94a3b8" }}>تلقائي (أحدث منتج بالمنصة)</span>
+              )}
+            </div>
+            <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "2px" }}>
+              💡 لتعيين أي منتج كـ "صفقة اليوم"، اضغط زر «🔥 صفقة اليوم» بجوار أي منتج في الجدول أدناه.
+            </div>
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            borderRight: "1px solid #334155",
+            paddingRight: "16px",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "28px",
+              background: "rgba(56, 189, 248, 0.15)",
+              borderRadius: "12px",
+              width: "48px",
+              height: "48px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: "1px solid rgba(56, 189, 248, 0.3)",
+              flexShrink: 0,
+            }}
+          >
+            ⚡
+          </div>
+          <div>
+            <div style={{ fontSize: "12px", color: "#38bdf8", fontWeight: 700 }}>
+              المنتج الأكثر طلباً (تلقائي ذكي)
+            </div>
+            <div style={{ fontSize: "14px", fontWeight: 600, color: "#f8fafc", marginTop: "2px" }}>
+              {spotlightInfo?.mostPopularProduct ? (
+                <>
+                  <span>{spotlightInfo.mostPopularProduct.name}</span>
+                  {spotlightInfo.mostPopularSalesCount > 0 && (
+                    <span
+                      style={{
+                        marginRight: "8px",
+                        background: "#0284c7",
+                        color: "#fff",
+                        padding: "2px 8px",
+                        borderRadius: "10px",
+                        fontSize: "11px",
+                      }}
+                    >
+                      تم شراؤه {spotlightInfo.mostPopularSalesCount} مرة
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span style={{ color: "#94a3b8" }}>يعرض حالياً المنتجات المميزة</span>
+              )}
+            </div>
+            <div style={{ fontSize: "11px", color: "#94a3b8", marginTop: "2px" }}>
+              {spotlightInfo?.mostPopularSalesCount > 0
+                ? "✓ يتم تحديثه تلقائياً بناءً على إحصائيات الطلبات الحقيقية."
+                : "ℹ️ لا توجد طلبات بعد - بمجرد ورود أي طلب لمنتج سيتم عرضه هنا فوراً."}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Add / Edit Product Modal */}
       {showModal && (
         <form className="szAdminAddUserCard" onSubmit={submitForm}>
@@ -418,65 +574,105 @@ export default function AdminProductsClient() {
                 </tr>
               </thead>
               <tbody>
-                {filteredProducts.map((product) => (
-                  <tr key={product.id}>
-                    <td>
-                      <div className="szProductAdminCell">
-                        <img
-                          src={getProductImage(product)}
-                          alt={product.name}
-                          className="szProductAdminThumb"
-                        />
-                        <div>
-                          <strong className="szProductAdminTitle">{product.name}</strong>
-                          <Link href={`/products/${product.id}`} className="szProductAdminViewLink">
-                            معاينة بالمتجر ↗
-                          </Link>
+                {filteredProducts.map((product) => {
+                  const isDealOfTheDay =
+                    spotlightInfo?.config?.dealOfTheDayProductId === product.id ||
+                    spotlightInfo?.dealOfTheDayProduct?.id === product.id;
+
+                  return (
+                    <tr key={product.id}>
+                      <td>
+                        <div className="szProductAdminCell">
+                          <img
+                            src={getProductImage(product)}
+                            alt={product.name}
+                            className="szProductAdminThumb"
+                          />
+                          <div>
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+                              <strong className="szProductAdminTitle">{product.name}</strong>
+                              {isDealOfTheDay && (
+                                <span
+                                  style={{
+                                    background: "linear-gradient(135deg, #f59e0b, #d97706)",
+                                    color: "#fff",
+                                    fontSize: "10px",
+                                    fontWeight: "bold",
+                                    padding: "2px 6px",
+                                    borderRadius: "6px",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "2px",
+                                  }}
+                                >
+                                  🔥 صفقة اليوم
+                                </span>
+                              )}
+                            </div>
+                            <Link href={`/products/${product.id}`} className="szProductAdminViewLink">
+                              معاينة بالمتجر ↗
+                            </Link>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td>
-                      <span className="szVendorPill">
-                        🏪 {product.vendor?.storeName || "سودان زون"}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="szAdminCatPill">
-                        {product.category?.name || product.category || "عام"}
-                      </span>
-                    </td>
-                    <td>
-                      <strong className="szOrderTotal">
-                        {Number(product.price || 0).toLocaleString()} ج.س
-                      </strong>
-                    </td>
-                    <td>
-                      <span className={`szQtyBadge ${Number(product.stock || 0) <= 3 ? "is-low" : ""}`}>
-                        {Number(product.stock || 0)} قطعة
-                      </span>
-                    </td>
-                    <td>
-                      <div className="szCatCardBtns">
-                        <button
-                          type="button"
-                          onClick={() => editProduct(product)}
-                          className="szCatMiniBtn szCatMiniBtn--edit"
-                          title="تعديل المنتج"
-                        >
-                          تعديل
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => removeProduct(product)}
-                          className="szCatMiniBtn szCatMiniBtn--delete"
-                          title="حذف المنتج"
-                        >
-                          حذف
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td>
+                        <span className="szVendorPill">
+                          🏪 {product.vendor?.storeName || "سودان زون"}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="szAdminCatPill">
+                          {product.category?.name || product.category || "عام"}
+                        </span>
+                      </td>
+                      <td>
+                        <strong className="szOrderTotal">
+                          {Number(product.price || 0).toLocaleString()} ج.س
+                        </strong>
+                      </td>
+                      <td>
+                        <span className={`szQtyBadge ${Number(product.stock || 0) <= 3 ? "is-low" : ""}`}>
+                          {Number(product.stock || 0)} قطعة
+                        </span>
+                      </td>
+                      <td>
+                        <div className="szCatCardBtns" style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                          <button
+                            type="button"
+                            onClick={() => makeDealOfTheDay(product)}
+                            disabled={settingSpotlight}
+                            className="szCatMiniBtn"
+                            style={{
+                              background: isDealOfTheDay ? "#fef3c7" : "#f8fafc",
+                              color: isDealOfTheDay ? "#b45309" : "#0f766e",
+                              borderColor: isDealOfTheDay ? "#f59e0b" : "#cbd5e1",
+                              fontWeight: isDealOfTheDay ? "bold" : "normal",
+                            }}
+                            title="تعيين هذا المنتج كـ صفقة اليوم في واجهة الموقع"
+                          >
+                            {isDealOfTheDay ? "★ صفقة اليوم" : "🔥 صفقة اليوم"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => editProduct(product)}
+                            className="szCatMiniBtn szCatMiniBtn--edit"
+                            title="تعديل المنتج"
+                          >
+                            تعديل
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeProduct(product)}
+                            className="szCatMiniBtn szCatMiniBtn--delete"
+                            title="حذف المنتج"
+                          >
+                            حذف
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
