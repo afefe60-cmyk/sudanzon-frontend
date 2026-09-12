@@ -82,7 +82,15 @@ export default function CategoryStrip({ categories = [], categoryIcons = {} }) {
             >
               <div className="szCategoryIconWrap" style={{ background: item.bg }}>
                 {item.isImage ? (
-                  <img src={item.icon} alt={item.name} loading="lazy" className="szCategoryIconImg" />
+                  <img
+                    src={item.icon}
+                    alt={item.name}
+                    width="48"
+                    height="48"
+                    loading="lazy"
+                    decoding="async"
+                    className="szCategoryIconImg"
+                  />
                 ) : (
                   <span style={{ fontSize: "2rem", lineHeight: 1 }}>{item.icon}</span>
                 )}

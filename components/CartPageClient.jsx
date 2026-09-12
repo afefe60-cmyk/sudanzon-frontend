@@ -117,7 +117,14 @@ export default function CartPageClient() {
               <div className="szCartItemCard" key={row.productId}>
                 <div className="szCartItemInfo">
                   <div className="szCartItemImg">
-                    <img src={getProductImage(row.product)} alt={row.product.name} />
+                    <img
+                      src={getProductImage(row.product)}
+                      alt={row.product.name}
+                      width="80"
+                      height="80"
+                      loading="lazy"
+                      decoding="async"
+                    />
                   </div>
                   <div className="szCartItemDetails">
                     <span className="szCartVendorTag">

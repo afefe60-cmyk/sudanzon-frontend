@@ -63,6 +63,10 @@ export default function ProductDetailClient({ product, specs = [] }) {
             <img
               src={selectedImage}
               alt={product.name}
+              width="600"
+              height="600"
+              fetchPriority="high"
+              decoding="async"
               className="szMainImage"
               onError={(e) => {
                 e.currentTarget.src = "/products/fashion.jpg";
@@ -96,6 +100,10 @@ export default function ProductDetailClient({ product, specs = [] }) {
                   <img
                     src={imgUrl}
                     alt={`${product.name} ${idx + 1}`}
+                    width="80"
+                    height="80"
+                    loading="lazy"
+                    decoding="async"
                     onError={(e) => {
                       e.currentTarget.src = "/products/fashion.jpg";
                     }}

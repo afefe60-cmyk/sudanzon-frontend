@@ -143,6 +143,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="ar" dir="rtl" className={tajawal.variable}>
       <head>
+        <link rel="preconnect" href="https://api.sudanzon.com" />
+        <link rel="dns-prefetch" href="https://api.sudanzon.com" />
+        <link rel="preload" as="image" href="/logo.png" />
         <style
           dangerouslySetInnerHTML={{
             __html: `

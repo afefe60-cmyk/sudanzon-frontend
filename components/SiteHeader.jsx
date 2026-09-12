@@ -328,7 +328,15 @@ export default function SiteHeader() {
           {/* Logo & Location */}
           <div className="szBrandWrap">
             <Link href="/" className="szLogoLink" aria-label="الرئيسية - سودان زون">
-              <img src="/logo.png" alt="سودان زون - SudanZon" className="szLogoImg" />
+              <img
+                src="/logo.png"
+                alt="سودان زون - SudanZon"
+                className="szLogoImg"
+                width="160"
+                height="40"
+                fetchPriority="high"
+                decoding="async"
+              />
             </Link>
 
             <div className="szLocationChip" title="منطقة التوصيل المحددة">

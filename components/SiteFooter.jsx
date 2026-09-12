@@ -9,7 +9,15 @@ export default function SiteFooter() {
         {/* Brand & Social Column */}
         <div className="szFooterBrand">
           <Link href="/" className="szFooterLogoLink">
-            <img src="/logo.png" alt="سودان زون" className="szFooterLogoImg" />
+            <img
+              src="/logo.png"
+              alt="سودان زون"
+              className="szFooterLogoImg"
+              width="160"
+              height="40"
+              loading="lazy"
+              decoding="async"
+            />
           </Link>
           <p className="szFooterDesc">
             المنصة السودانية الأولى المتكاملة للتجارة الإلكترونية متعددة البائعين. نربط التجار بالمشترين في بيئة آمنة وسهلة مع شحن لكافة الولايات والدفع عند الاستلام وبنكك.

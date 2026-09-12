@@ -62,7 +62,10 @@ export default function ProductCard({ product, badge, isHot = false }) {
           <img
             src={getProductImage(product)}
             alt={product.name}
+            width="300"
+            height="300"
             loading="lazy"
+            decoding="async"
             className="szProductImage"
           />
         </div>

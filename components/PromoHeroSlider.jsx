@@ -151,6 +151,10 @@ export default function PromoHeroSlider() {
                 alt={slide.title}
                 className="szHeroSlideBgImg"
                 key={`bg-${slide.id}`}
+                width="1200"
+                height="520"
+                fetchPriority="high"
+                decoding="async"
               />
               <div className="szHeroSlideOverlay" />
             </div>
@@ -239,7 +243,14 @@ export default function PromoHeroSlider() {
             {/* Side Card 1: Deal of the Day */}
             <Link href={dealHref} className="szSideDealCard szSideDealCard--gold">
               <div className="szSideCardImageWrap">
-                <img src={dealImage} alt={dealTitle} />
+                <img
+                  src={dealImage}
+                  alt={dealTitle}
+                  width="200"
+                  height="200"
+                  loading="lazy"
+                  decoding="async"
+                />
                 <span className="szSideBadge">{dealBadge}</span>
               </div>
               <div className="szSideCardBody">
@@ -255,7 +266,14 @@ export default function PromoHeroSlider() {
             {/* Side Card 2: Special Offer or Most Popular */}
             <Link href={popHref} className={`szSideDealCard ${isSpecial ? "szSideDealCard--gold" : "szSideDealCard--tech"}`}>
               <div className="szSideCardImageWrap">
-                <img src={popImage} alt={popTitle} />
+                <img
+                  src={popImage}
+                  alt={popTitle}
+                  width="200"
+                  height="200"
+                  loading="lazy"
+                  decoding="async"
+                />
                 <span className={`szSideBadge ${isSpecial ? "" : "szSideBadge--blue"}`}>{popBadge}</span>
               </div>
               <div className="szSideCardBody">

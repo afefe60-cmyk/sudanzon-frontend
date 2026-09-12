@@ -115,7 +115,14 @@ export default function MarketPulse({ products = [], categories = [] }) {
                 <Link href={`/products/${product.id}`} className="szPulseItemRow" key={product.id}>
                   <div className="szPulseItemRank">#{idx + 1}</div>
                   <div className="szPulseItemImgWrap">
-                    <img src={getProductImage(product)} alt={product.name} loading="lazy" />
+                    <img
+                      src={getProductImage(product)}
+                      alt={product.name}
+                      width="60"
+                      height="60"
+                      loading="lazy"
+                      decoding="async"
+                    />
                   </div>
                   <div className="szPulseItemDetails">
                     <strong className="szPulseItemName">{product.name}</strong>
@@ -142,7 +149,14 @@ export default function MarketPulse({ products = [], categories = [] }) {
               {liveStores.map((store) => (
                 <div className="szPulseStoreCard" key={store.title}>
                   <div className="szPulseStoreIcon">
-                    <img src={store.image} alt={store.title} loading="lazy" />
+                    <img
+                      src={store.image}
+                      alt={store.title}
+                      width="60"
+                      height="60"
+                      loading="lazy"
+                      decoding="async"
+                    />
                   </div>
                   <div className="szPulseStoreMeta">
                     <strong className="szPulseStoreName">{store.title}</strong>
