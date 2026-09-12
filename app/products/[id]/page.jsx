@@ -12,12 +12,28 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 async function loadProduct(id) {
+  if (!id) return null;
   try {
-    const result = await apiJson(`/api/products/${id}`, { cache: "no-store" });
-    return result.item || fallbackProducts.find((item) => String(item.id) === String(id)) || fallbackProducts[0];
-  } catch {
-    return fallbackProducts.find((item) => String(item.id) === String(id)) || fallbackProducts[0];
+    const encodedId = encodeURIComponent(String(id).trim());
+    const result = await apiJson(`/api/products/${encodedId}`, { cache: "no-store" });
+    if (result?.item) {
+      return result.item;
+    }
+  } catch (e) {
+    // API request failed or returned 404
   }
+
+  const decodedId = decodeURIComponent(String(id));
+  return (
+    fallbackProducts.find(
+      (item) =>
+        String(item.id) === String(id) ||
+        String(item.id) === decodedId ||
+        item.slug === id ||
+        item.slug === decodedId ||
+        item.name === decodedId
+    ) || null
+  );
 }
 
 async function loadSimilarProducts(category, currentId) {
@@ -99,6 +115,23 @@ export async function generateMetadata({ params }) {
 
 export default async function ProductPage({ params }) {
   const product = await loadProduct(params.id);
+
+  if (!product) {
+    return (
+      <main className="szPageShell">
+        <SiteHeader />
+        <div className="container szProductDetailContainer" style={{ textAlign: "center", padding: "60px 20px" }}>
+          <div style={{ fontSize: "50px", marginBottom: "16px" }}>🔍</div>
+          <h2 style={{ fontSize: "22px", fontWeight: 700, marginBottom: "10px" }}>عذراً، المنتج غير متوفر</h2>
+          <p style={{ color: "#64748b", marginBottom: "24px" }}>قد يكون المنتج قد تم حذفه أو أن الرابط غير صحيح.</p>
+          <Link href="/products" className="szHeroCtaPrimary" style={{ display: "inline-flex", margin: "0 auto" }}>
+            تصفح كافة منتجات المتجر
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
   const similarProducts = await loadSimilarProducts(
     product.category?.name || product.category,
     product.id

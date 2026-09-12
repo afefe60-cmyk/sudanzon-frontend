@@ -114,7 +114,7 @@ export default function PromoHeroSlider() {
   const dealTitle = deal ? deal.name : "أحذية رياضية وسنيكرز أصلية";
   const dealPrice = deal ? `${Number(deal.price).toLocaleString()} ج.س` : "تبدأ من 27,000 ج.س";
   const dealBadge = deal?.discountPercent ? `خصم ${deal.discountPercent}%` : "خصم 35%";
-  const dealHref = deal ? `/products/${deal.slug || deal.id}` : "/products?category=أحذية";
+  const dealHref = deal?.id ? `/products/${deal.id}` : "/products?category=أحذية";
   const dealTag = deal?.tag || "صفقة اليوم السريعة 🔥";
 
   const pop = spotlight?.specialOffer || spotlight?.mostPopular;
@@ -124,13 +124,13 @@ export default function PromoHeroSlider() {
   const popTitle = pop ? pop.name : "ساعات ذكية وملحقات هواتف";
   const popPrice = pop ? `${Number(pop.price).toLocaleString()} ج.س` : "تبدأ من 18,500 ج.س";
   const popBadge = isSpecial
-    ? (pop.discountPercent ? `خصم ${pop.discountPercent}%` : "عرض خاص")
+    ? (pop?.discountPercent ? `خصم ${pop.discountPercent}%` : "عرض خاص")
     : pop?.isActualBestSeller
     ? `مباع ${pop.totalSold} مرة`
     : pop
     ? "الأكثر طلباً"
     : "جديد";
-  const popHref = pop ? `/products/${pop.slug || pop.id}` : "/products?category=إلكترونيات";
+  const popHref = pop?.id ? `/products/${pop.id}` : "/products?category=إلكترونيات";
   const popTag = isSpecial
     ? (spotlight?.specialOffer?.tag || "العرض الخاص ⭐")
     : (pop?.tag || "الأكثر طلباً ⚡");
