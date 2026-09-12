@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { getUserSavedLocation, requestUserLocation } from "../lib/location";
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "https://api.sudanzon.com").replace(/\/+$/, "");
 
@@ -20,6 +21,15 @@ export default function CourierRegisterClient() {
     companyName: "",
     isCompany: false,
   });
+
+  const [locLoading, setLocLoading] = useState(false);
+
+  useEffect(() => {
+    const saved = getUserSavedLocation();
+    if (saved?.city) {
+      setFormData((prev) => ({ ...prev, city: saved.city }));
+    }
+  }, []);
 
   const [licenseFile, setLicenseFile] = useState(null);
   const [licensePreview, setLicensePreview] = useState("");
@@ -242,7 +252,38 @@ export default function CourierRegisterClient() {
                       />
                     </div>
                     <div>
-                      <label style={{ display: "block", marginBottom: "4px", fontSize: "13px", fontWeight: "bold" }}>المدينة الأساسية *</label>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                        <label style={{ fontSize: "13px", fontWeight: "bold", margin: 0 }}>المدينة الأساسية *</label>
+                        <button
+                          type="button"
+                          disabled={locLoading}
+                          onClick={async () => {
+                            setLocLoading(true);
+                            try {
+                              const loc = await requestUserLocation();
+                              if (loc.city) {
+                                setFormData((prev) => ({ ...prev, city: loc.city }));
+                              }
+                            } catch (err) {
+                              alert(err.message || "تعذر تحديد الموقع");
+                            } finally {
+                              setLocLoading(false);
+                            }
+                          }}
+                          style={{
+                            background: "rgba(16, 185, 129, 0.15)",
+                            border: "1px solid rgba(16, 185, 129, 0.3)",
+                            color: "#059669",
+                            borderRadius: "6px",
+                            padding: "2px 6px",
+                            fontSize: "11px",
+                            fontWeight: "bold",
+                            cursor: "pointer",
+                          }}
+                        >
+                          {locLoading ? "⏳ GPS..." : "📍 GPS"}
+                        </button>
+                      </div>
                       <select
                         name="city"
                         value={formData.city}

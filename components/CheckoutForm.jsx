@@ -43,10 +43,13 @@ const paymentMethods = [
   },
 ];
 
+import { getUserSavedLocation, requestUserLocation } from "../lib/location";
+
 export default function CheckoutForm({ items = [] }) {
   const router = useRouter();
   const [city, setCity] = useState("الخرطوم");
   const [address, setAddress] = useState("");
+  const [locLoading, setLocLoading] = useState(false);
   const [note, setNote] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("CASH_ON_DELIVERY");
   const [loading, setLoading] = useState(false);
@@ -60,6 +63,14 @@ export default function CheckoutForm({ items = [] }) {
   useEffect(() => {
     const storedToken = localStorage.getItem("sudanzonToken") || "";
     setToken(storedToken);
+
+    const savedLoc = getUserSavedLocation();
+    if (savedLoc?.city) {
+      setCity(savedLoc.city);
+      if (savedLoc.suburb && !address) {
+        setAddress(savedLoc.suburb);
+      }
+    }
 
     try {
       const rawUser = localStorage.getItem("sudanzonUser");
@@ -160,9 +171,39 @@ export default function CheckoutForm({ items = [] }) {
 
       {/* City Selector */}
       <div className="szFormField">
-        <label className="szFormLabel" htmlFor="checkout-city">
-          المدينة / الولاية:
-        </label>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+          <label className="szFormLabel" htmlFor="checkout-city" style={{ margin: 0 }}>
+            المدينة / الولاية:
+          </label>
+          <button
+            type="button"
+            disabled={locLoading}
+            onClick={async () => {
+              setLocLoading(true);
+              try {
+                const loc = await requestUserLocation();
+                if (loc.city) setCity(loc.city);
+                if (loc.suburb) setAddress((prev) => prev ? `${loc.suburb}، ${prev}` : loc.suburb);
+              } catch (err) {
+                alert(err.message || "تعذر تحديد الموقع تلقائياً");
+              } finally {
+                setLocLoading(false);
+              }
+            }}
+            style={{
+              background: "rgba(245, 158, 11, 0.15)",
+              border: "1px solid rgba(245, 158, 11, 0.3)",
+              color: "#f59e0b",
+              borderRadius: "6px",
+              padding: "4px 8px",
+              fontSize: "0.78rem",
+              fontWeight: "700",
+              cursor: "pointer",
+            }}
+          >
+            {locLoading ? "⏳ جاري التحديد..." : "📍 استخدام موقعي الحالي (GPS)"}
+          </button>
+        </div>
         <select
           id="checkout-city"
           className="szFormSelect"

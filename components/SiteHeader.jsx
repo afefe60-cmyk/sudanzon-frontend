@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiJson } from "../lib/api";
 import { readCart } from "../lib/cart";
+import { getUserSavedLocation } from "../lib/location";
 
 const navItems = [
   { href: "/", label: "الرئيسية" },
@@ -81,6 +82,25 @@ export default function SiteHeader() {
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [browserPermission, setBrowserPermission] = useState("default");
   const [lastNotificationId, setLastNotificationId] = useState(null);
+  const [userLocation, setUserLocation] = useState(null);
+
+  useEffect(() => {
+    const saved = getUserSavedLocation();
+    if (saved) setUserLocation(saved);
+
+    const onLocUpdated = (e) => {
+      if (e.detail) setUserLocation(e.detail);
+    };
+
+    window.addEventListener("sudanzon-location-updated", onLocUpdated);
+    return () => window.removeEventListener("sudanzon-location-updated", onLocUpdated);
+  }, []);
+
+  const openLocationModal = () => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("sudanzon-open-location-modal"));
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -339,16 +359,24 @@ export default function SiteHeader() {
               />
             </Link>
 
-            <div className="szLocationChip" title="منطقة التوصيل المحددة">
+            <button
+              type="button"
+              onClick={openLocationModal}
+              className="szLocationChip"
+              title="اضغط لتغيير أو تحديد موقع التوصيل الحالي"
+              aria-label="تحديد موقع التوصيل"
+            >
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" className="szLocIcon">
                 <path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z" />
                 <circle cx="12" cy="10" r="3" />
               </svg>
               <div className="szLocText">
                 <span className="szLocLabel">التوصيل إلى</span>
-                <strong className="szLocCity">الخرطوم & السودان</strong>
+                <strong className="szLocCity">
+                  {userLocation?.formatted || userLocation?.city || "الخرطوم & السودان"}
+                </strong>
               </div>
-            </div>
+            </button>
           </div>
 
           {/* Search Bar */}
@@ -663,6 +691,36 @@ export default function SiteHeader() {
             </button>
           </div>
           <div className="szDrawerBody">
+            <div className="szDrawerSection">
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  openLocationModal();
+                }}
+                className="szDrawerLocBtn"
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  background: "rgba(245, 158, 11, 0.12)",
+                  border: "1px solid rgba(245, 158, 11, 0.3)",
+                  color: "#f59e0b",
+                  padding: "10px 14px",
+                  borderRadius: "10px",
+                  fontSize: "0.88rem",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  marginBottom: "12px",
+                }}
+              >
+                <span>📍 موقع التوصيل:</span>
+                <strong style={{ color: "#ffffff" }}>
+                  {userLocation?.formatted || userLocation?.city || "الخرطوم & السودان"}
+                </strong>
+              </button>
+            </div>
             <div className="szDrawerSection">
               <span className="szDrawerHeading">روابط سريعة</span>
               {visibleNavItems.map((item) => (
