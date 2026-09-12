@@ -19,6 +19,10 @@ const categoryIconMap = {
 
 import { matchesProductSmartly } from "../../lib/arabic-search";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
+
 async function loadProducts(filters = {}) {
   const q = filters.q?.trim();
   const category = filters.category?.trim();

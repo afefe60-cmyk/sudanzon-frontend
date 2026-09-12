@@ -10,6 +10,7 @@ import { categories as fallbackCategories, products as fallbackProducts } from "
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 async function loadHomeData() {
   try {
@@ -18,11 +19,15 @@ async function loadHomeData() {
       apiJson("/api/products/categories", { cache: "no-store" }),
     ]);
 
+    const liveProducts = productsResult?.items;
+    const liveCategories = categoriesResult?.items;
+
     return {
-      products: productsResult.items || [],
-      categories: categoriesResult.items || [],
+      products: Array.isArray(liveProducts) && liveProducts.length > 0 ? liveProducts : fallbackProducts,
+      categories: Array.isArray(liveCategories) && liveCategories.length > 0 ? liveCategories : fallbackCategories,
     };
-  } catch {
+  } catch (err) {
+    console.error("Home data fetch error:", err);
     return {
       products: fallbackProducts,
       categories: fallbackCategories,

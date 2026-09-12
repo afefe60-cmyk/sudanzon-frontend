@@ -68,6 +68,7 @@ const megaMenuGroups = [
 ];
 
 export default function SiteHeader() {
+  const [dynamicCategories, setDynamicCategories] = useState(categoryItems);
   const [cartCount, setCartCount] = useState(0);
   const [cartBump, setCartBump] = useState(false);
   const [megaOpen, setMegaOpen] = useState(false);
@@ -81,19 +82,47 @@ export default function SiteHeader() {
   const [browserPermission, setBrowserPermission] = useState("default");
   const [lastNotificationId, setLastNotificationId] = useState(null);
 
+  useEffect(() => {
+    let isMounted = true;
+    apiJson("/api/products/categories")
+      .then((res) => {
+        if (isMounted && res?.items?.length > 0) {
+          const names = res.items.map((c) => (typeof c === "string" ? c : c.name)).filter(Boolean);
+          if (names.length > 0) {
+            setDynamicCategories(names);
+          }
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const canSeeItem = (item) => !item.roles || (currentRole && item.roles.includes(currentRole));
   const canSeeNotifications = Boolean(currentUser);
   const visibleNavItems = useMemo(() => navItems.filter(canSeeItem), [currentRole]);
-  const visibleMegaMenuGroups = useMemo(
-    () =>
-      megaMenuGroups
-        .map((group) => ({
-          ...group,
-          links: group.links.filter(canSeeItem),
-        }))
-        .filter((group) => group.links.length > 0),
-    [currentRole]
-  );
+  const visibleMegaMenuGroups = useMemo(() => {
+    const groups = [
+      {
+        icon: "⚡",
+        title: "التصنيفات الرئيسية",
+        links: dynamicCategories.map((item) => ({
+          href: `/products?category=${encodeURIComponent(item)}`,
+          label: item,
+          icon: "📦",
+        })),
+      },
+      ...megaMenuGroups.slice(1),
+    ];
+
+    return groups
+      .map((group) => ({
+        ...group,
+        links: group.links.filter(canSeeItem),
+      }))
+      .filter((group) => group.links.length > 0);
+  }, [currentRole, dynamicCategories]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {

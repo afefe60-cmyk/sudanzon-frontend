@@ -10,6 +10,7 @@ const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "https://api.sudanzon.com")
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 async function loadProduct(id) {
   if (!id) return null;
