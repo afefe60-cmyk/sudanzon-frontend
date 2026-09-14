@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { addToCartItem } from "../lib/cart";
 import { getProductImages } from "../lib/media";
 
@@ -14,26 +14,88 @@ export default function ProductDetailClient({ product, specs = [] }) {
   const [added, setAdded] = useState(false);
   const [isFav, setIsFav] = useState(false);
 
-  const price = Number(product.price || 0);
-  const discount = Number(product.discount || 0);
-  const stock = Number(product.stock !== undefined ? product.stock : 10);
-  const originalPrice = discount > 0 ? Math.round(price / (1 - discount / 100)) : null;
+  // Initialize selected options with first value of each option
+  const initialSelectedOptions = useMemo(() => {
+    const initial = {};
+    if (product?.hasVariants && Array.isArray(product.options)) {
+      product.options.forEach((opt) => {
+        if (opt.name && Array.isArray(opt.values) && opt.values.length > 0) {
+          initial[opt.name] = opt.values[0].value || opt.values[0];
+        }
+      });
+    }
+    return initial;
+  }, [product]);
+
+  const [selectedOptions, setSelectedOptions] = useState(initialSelectedOptions);
+
+  useEffect(() => {
+    setSelectedOptions(initialSelectedOptions);
+  }, [initialSelectedOptions]);
+
+  // Match the active variant based on selectedOptions
+  const matchedVariant = useMemo(() => {
+    if (!product?.hasVariants || !Array.isArray(product.variants) || product.variants.length === 0) {
+      return null;
+    }
+
+    const found = product.variants.find((v) => {
+      if (!Array.isArray(v.optionValues) || v.optionValues.length === 0) return false;
+      return v.optionValues.every((ov) => {
+        const optName = ov.optionName || product.options?.find((o) => o.id === ov.optionId)?.name;
+        if (!optName) return true;
+        const selVal = selectedOptions[optName];
+        return selVal === ov.value;
+      });
+    });
+
+    return found || product.variants[0];
+  }, [product, selectedOptions]);
+
+  // Sync image if variant has its own image
+  useEffect(() => {
+    if (matchedVariant?.image) {
+      setSelectedImage(matchedVariant.image);
+    }
+  }, [matchedVariant]);
+
+  const basePrice = Number(product.price || 0);
+  const currentPrice = matchedVariant ? Number(matchedVariant.price) : basePrice;
+  const currentComparePrice = matchedVariant
+    ? (matchedVariant.comparePrice != null && Number(matchedVariant.comparePrice) > currentPrice ? Number(matchedVariant.comparePrice) : null)
+    : (product.discount > 0 ? Math.round(currentPrice / (1 - product.discount / 100)) : null);
+
+  const currentStock = matchedVariant ? Number(matchedVariant.stock) : Number(product.stock !== undefined ? product.stock : 10);
+  const isOutOfStock = currentStock <= 0 || (matchedVariant && matchedVariant.isActive === false);
+
+  const discountPercent = currentComparePrice && currentComparePrice > currentPrice
+    ? Math.round(((currentComparePrice - currentPrice) / currentComparePrice) * 100)
+    : 0;
+
+  const handleOptionSelect = (optionName, value) => {
+    setSelectedOptions((prev) => ({
+      ...prev,
+      [optionName]: value,
+    }));
+  };
 
   const handleAddToCart = () => {
-    addToCartItem(product, quantity);
+    if (isOutOfStock) return;
+    addToCartItem(product, quantity, matchedVariant, selectedOptions);
     setAdded(true);
     window.dispatchEvent(new Event("sudanzon-cart-updated"));
     setTimeout(() => setAdded(false), 2000);
   };
 
   const handleBuyNow = () => {
-    addToCartItem(product, quantity);
+    if (isOutOfStock) return;
+    addToCartItem(product, quantity, matchedVariant, selectedOptions);
     window.dispatchEvent(new Event("sudanzon-cart-updated"));
     router.push("/cart");
   };
 
   const incrementQty = () => {
-    if (quantity < stock) setQuantity(quantity + 1);
+    if (quantity < currentStock) setQuantity(quantity + 1);
   };
 
   const decrementQty = () => {
@@ -48,7 +110,7 @@ export default function ProductDetailClient({ product, specs = [] }) {
         <span>/</span>
         <Link href="/products">المنتجات</Link>
         <span>/</span>
-        <Link href={`/products?category=${encodeURIComponent(product.category?.name || product.category || "")}`}>
+        <Link href={"/products?category=" + encodeURIComponent(product.category?.name || product.category || "")}>
           {product.category?.name || product.category || "التصنيف"}
         </Link>
         <span>/</span>
@@ -72,13 +134,13 @@ export default function ProductDetailClient({ product, specs = [] }) {
                 e.currentTarget.src = "/products/fashion.jpg";
               }}
             />
-            {discount > 0 && (
-              <span className="szGalleryDiscountBadge">خصم {discount}%</span>
+            {discountPercent > 0 && (
+              <span className="szGalleryDiscountBadge">خصم {discountPercent}%</span>
             )}
             <button
               type="button"
               onClick={() => setIsFav(!isFav)}
-              className={`szGalleryFavBtn ${isFav ? "is-active" : ""}`}
+              className={"szGalleryFavBtn " + (isFav ? "is-active" : "")}
               aria-label="المفضلة"
             >
               <svg viewBox="0 0 24 24" width="20" height="20" fill={isFav ? "#e11d48" : "none"} stroke={isFav ? "#e11d48" : "currentColor"} strokeWidth="2">
@@ -92,14 +154,14 @@ export default function ProductDetailClient({ product, specs = [] }) {
             <div className="szThumbsTrack">
               {gallery.map((imgUrl, idx) => (
                 <button
-                  key={`${imgUrl}-${idx}`}
+                  key={imgUrl + "-" + idx}
                   type="button"
                   onClick={() => setSelectedImage(imgUrl)}
-                  className={`szThumbBtn ${selectedImage === imgUrl ? "is-active" : ""}`}
+                  className={"szThumbBtn " + (selectedImage === imgUrl ? "is-active" : "")}
                 >
                   <img
                     src={imgUrl}
-                    alt={`${product.name} ${idx + 1}`}
+                    alt={product.name + " " + (idx + 1)}
                     width="80"
                     height="80"
                     loading="lazy"
@@ -114,17 +176,17 @@ export default function ProductDetailClient({ product, specs = [] }) {
           )}
         </div>
 
-        {/* Center/Right Column: Product Details & Specs */}
+        {/* Center Column: Product Details & Options */}
         <div className="szProductInfoCol">
           <div className="szVendorBadgeRow">
             <span className="szVendorPill">
               🏪 {product.vendor?.storeName || product.vendor || "سودان زون"}
             </span>
             <span className="szStockStatus">
-              {stock > 0 ? (
-                <span className="szInStock">✓ متوفر بالمخزون ({stock} قطعة)</span>
+              {!isOutOfStock ? (
+                <span className="szInStock">✓ متوفر بالمخزون ({currentStock} قطعة)</span>
               ) : (
-                <span className="szOutOfStock">نفد من المخزون</span>
+                <span className="szOutOfStock">نفد من المخزون (غير متوفر)</span>
               )}
             </span>
           </div>
@@ -139,19 +201,63 @@ export default function ProductDetailClient({ product, specs = [] }) {
             </div>
             <span className="szDividerDot">•</span>
             <span className="szReviewCount">تقييم موثوق من المشترين</span>
+            {matchedVariant?.sku && (
+              <>
+                <span className="szDividerDot">•</span>
+                <span className="szSkuBadge">رمز SKU: {matchedVariant.sku}</span>
+              </>
+            )}
           </div>
 
           {/* Price Block */}
           <div className="szDetailPriceBox">
             <div className="szMainPriceRow">
-              <span className="szDetailPrice">{price.toLocaleString()}</span>
+              <span className="szDetailPrice">{currentPrice.toLocaleString()}</span>
               <span className="szDetailCurrency">جنيه سوداني</span>
-              {originalPrice && originalPrice > price && (
-                <span className="szDetailOriginalPrice">{originalPrice.toLocaleString()} ج.س</span>
+              {currentComparePrice && (
+                <span className="szDetailOriginalPrice">{currentComparePrice.toLocaleString()} ج.س</span>
               )}
             </div>
             <span className="szTaxNotice">السعر شامل كافة الرسوم والضريبة المحلية</span>
           </div>
+
+          {/* Dynamic Interactive Product Options Selector */}
+          {product.hasVariants && Array.isArray(product.options) && product.options.length > 0 && (
+            <div className="szDetailOptionsSection">
+              <h3 className="szOptionsHeading">اختر المواصفات والخيارات:</h3>
+              {product.options.map((opt) => {
+                const optName = opt.name;
+                const activeVal = selectedOptions[optName];
+
+                return (
+                  <div key={opt.id || optName} className="szOptionGroup">
+                    <div className="szOptionGroupTitle">
+                      <span className="szOptionNameLabel">{optName}:</span>
+                      <strong className="szOptionActiveValue">{activeVal || "يرجى الاختيار"}</strong>
+                    </div>
+
+                    <div className="szOptionPills">
+                      {(opt.values || []).map((valObj) => {
+                        const valStr = typeof valObj === "object" ? valObj.value : valObj;
+                        const isSelected = activeVal === valStr;
+
+                        return (
+                          <button
+                            key={valStr}
+                            type="button"
+                            onClick={() => handleOptionSelect(optName, valStr)}
+                            className={"szOptionPillBtn " + (isSelected ? "is-selected" : "")}
+                          >
+                            <span>{valStr}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Product Description */}
           <div className="szDetailDescBox">
@@ -189,9 +295,19 @@ export default function ProductDetailClient({ product, specs = [] }) {
         <div className="szProductBuyBoxCol">
           <div className="szBuyBoxCard">
             <div className="szBuyBoxHeader">
-              <span className="szBuyBoxLabel">طلب المنتج</span>
-              <strong className="szBuyBoxPrice">{(price * quantity).toLocaleString()} ج.س</strong>
+              <span className="szBuyBoxLabel">إجمالي الطلب</span>
+              <strong className="szBuyBoxPrice">{(currentPrice * quantity).toLocaleString()} ج.س</strong>
             </div>
+
+            {/* Selected summary */}
+            {product.hasVariants && Object.keys(selectedOptions).length > 0 && (
+              <div className="szBuyBoxSelectedSummary">
+                <span className="szSummaryLabel">الخيار المختار:</span>
+                <span className="szSummaryPill">
+                  {Object.entries(selectedOptions).map(([k, v]) => k + ": " + v).join(" • ")}
+                </span>
+              </div>
+            )}
 
             {/* Quantity Selector */}
             <div className="szQtySelectorWrap">
@@ -200,7 +316,7 @@ export default function ProductDetailClient({ product, specs = [] }) {
                 <button
                   type="button"
                   onClick={decrementQty}
-                  disabled={quantity <= 1}
+                  disabled={quantity <= 1 || isOutOfStock}
                   className="szQtyBtn"
                   aria-label="إنقاص الكمية"
                 >
@@ -210,18 +326,19 @@ export default function ProductDetailClient({ product, specs = [] }) {
                   id="sz-qty-input"
                   type="number"
                   min="1"
-                  max={stock}
+                  max={Math.max(1, currentStock)}
                   value={quantity}
+                  disabled={isOutOfStock}
                   onChange={(e) => {
                     const val = Number(e.target.value) || 1;
-                    if (val >= 1 && val <= stock) setQuantity(val);
+                    if (val >= 1 && val <= currentStock) setQuantity(val);
                   }}
                   className="szQtyInput"
                 />
                 <button
                   type="button"
                   onClick={incrementQty}
-                  disabled={quantity >= stock}
+                  disabled={quantity >= currentStock || isOutOfStock}
                   className="szQtyBtn"
                   aria-label="زيادة الكمية"
                 >
@@ -235,10 +352,12 @@ export default function ProductDetailClient({ product, specs = [] }) {
               <button
                 type="button"
                 onClick={handleAddToCart}
-                className={`szBuyBtn szBuyBtn--cart ${added ? "is-added" : ""}`}
-                disabled={stock <= 0}
+                className={"szBuyBtn szBuyBtn--cart " + (added ? "is-added " : "") + (isOutOfStock ? "is-disabled" : "")}
+                disabled={isOutOfStock}
               >
-                {added ? (
+                {isOutOfStock ? (
+                  <span>غير متوفر حالياً</span>
+                ) : added ? (
                   <>
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5">
                       <polyline points="20 6 9 17 4 12" />
@@ -260,8 +379,8 @@ export default function ProductDetailClient({ product, specs = [] }) {
               <button
                 type="button"
                 onClick={handleBuyNow}
-                className="szBuyBtn szBuyBtn--buyNow"
-                disabled={stock <= 0}
+                className={"szBuyBtn szBuyBtn--buyNow " + (isOutOfStock ? "is-disabled" : "")}
+                disabled={isOutOfStock}
               >
                 <span>شراء الآن (متابعة الدفع)</span>
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -289,7 +408,7 @@ export default function ProductDetailClient({ product, specs = [] }) {
               {product.vendor?.description || "متجر موثوق يقدم منتجات مختارة بعناية داخل SudanZon."}
             </p>
             {product.vendor?.storeSlug ? (
-              <Link href={`/stores/${product.vendor.storeSlug}`} className="szVisitStoreBtn">
+              <Link href={"/stores/" + product.vendor.storeSlug} className="szVisitStoreBtn">
                 <span>زيارة صفحة المتجر وتصفح منتجاته</span>
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <path d="M19 12H5M12 19l-7-7 7-7" />
@@ -300,7 +419,7 @@ export default function ProductDetailClient({ product, specs = [] }) {
         </div>
       </div>
 
-      {/* Specifications & Attributes Table */}
+      {/* Specifications Table */}
       {specs.length > 0 && (
         <div className="szSpecsSection">
           <h2 className="szSpecsHeading">مواصفات وتفاصيل المنتج</h2>
@@ -318,22 +437,24 @@ export default function ProductDetailClient({ product, specs = [] }) {
       {/* Sticky Mobile Action Bar */}
       <div className="szStickyMobileBar">
         <div className="szStickyMobilePrice">
-          <span className="szStickyPriceVal">{price.toLocaleString()} ج.س</span>
-          <span className="szStickyStockStatus">متوفر للطلب</span>
+          <span className="szStickyPriceVal">{currentPrice.toLocaleString()} ج.س</span>
+          <span className="szStickyStockStatus">{isOutOfStock ? "غير متوفر" : "متوفر للطلب"}</span>
         </div>
         <div className="szStickyMobileButtons">
           <button
             type="button"
             onClick={handleAddToCart}
             className="szStickyCartBtn"
+            disabled={isOutOfStock}
             aria-label="أضف للسلة"
           >
-            {added ? "✓ تمت الإضافة" : "أضف للسلة"}
+            {isOutOfStock ? "غير متوفر" : added ? "✓ تمت الإضافة" : "أضف للسلة"}
           </button>
           <button
             type="button"
             onClick={handleBuyNow}
             className="szStickyBuyBtn"
+            disabled={isOutOfStock}
             aria-label="شراء الآن"
           >
             شراء الآن

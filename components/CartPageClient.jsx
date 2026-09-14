@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { apiJson } from "../lib/api";
-import { readCart, removeCartItem, setCartQuantity, writeCart } from "../lib/cart";
+import { readCart, removeCartItem, setCartQuantity, writeCart, getCartItemId } from "../lib/cart";
 import { getProductImage } from "../lib/media";
 import { products as fallbackProducts } from "../lib/mock-data";
 import CheckoutForm from "./CheckoutForm";
@@ -44,14 +44,24 @@ export default function CartPageClient() {
     return cart
       .map((entry) => {
         const product = products.find((item) => String(item.id) === String(entry.productId));
-        if (!product) return null;
+        const pName = entry.name || product?.name || "منتج";
+        const pImg = entry.image || (product ? getProductImage(product) : "/products/fashion.jpg");
+        const pVendor = entry.vendor || product?.vendor?.storeName || product?.vendor || "سودان زون";
 
         const qty = Math.max(1, Number(entry.quantity || 1));
-        const price = Number(product.price || 0);
+        const price = Number(entry.price != null ? entry.price : (product?.price || 0));
 
         return {
           ...entry,
-          product,
+          cartItemId: getCartItemId(entry),
+          product: product || { id: entry.productId, name: pName, price },
+          name: pName,
+          image: pImg,
+          vendor: pVendor,
+          variantTitle: entry.variantTitle || null,
+          variantId: entry.variantId || null,
+          sku: entry.sku || null,
+          price,
           quantity: qty,
           subtotal: price * qty,
         };
@@ -64,14 +74,14 @@ export default function CartPageClient() {
   const shippingCost = itemsTotal > 0 ? (itemsTotal >= 50000 ? 0 : 3000) : 0;
   const grandTotal = itemsTotal + shippingCost;
 
-  const updateQuantity = (productId, quantity) => {
-    const next = setCartQuantity(productId, Math.max(1, quantity));
+  const updateQuantity = (cartItemId, quantity) => {
+    const next = setCartQuantity(cartItemId, Math.max(1, quantity));
     setCart(next);
     window.dispatchEvent(new Event("sudanzon-cart-updated"));
   };
 
-  const removeItem = (productId) => {
-    const next = removeCartItem(productId);
+  const removeItem = (cartItemId) => {
+    const next = removeCartItem(cartItemId);
     setCart(next);
     window.dispatchEvent(new Event("sudanzon-cart-updated"));
   };
@@ -83,6 +93,17 @@ export default function CartPageClient() {
     setMessage("تم تفريغ سلة المشتريات");
     setTimeout(() => setMessage(""), 3000);
   };
+
+  const checkoutItems = useMemo(() => {
+    return rows.map((r) => ({
+      productId: r.productId,
+      variantId: r.variantId,
+      variantTitle: r.variantTitle,
+      sku: r.sku,
+      quantity: r.quantity,
+      price: r.price,
+    }));
+  }, [rows]);
 
   return (
     <div className="szCartPageWrapper">
@@ -109,17 +130,17 @@ export default function CartPageClient() {
           {/* Items List (Left/Main Column) */}
           <div className="szCartItemsList">
             <div className="szCartItemsHeaderRow">
-              <span>المنتج والتفاصيل</span>
+              <span>المنتج والتفاصيل المحددة</span>
               <span>الكمية والإجمالي</span>
             </div>
 
             {rows.map((row) => (
-              <div className="szCartItemCard" key={row.productId}>
+              <div className="szCartItemCard" key={row.cartItemId}>
                 <div className="szCartItemInfo">
                   <div className="szCartItemImg">
                     <img
-                      src={getProductImage(row.product)}
-                      alt={row.product.name}
+                      src={row.image}
+                      alt={row.name}
                       width="80"
                       height="80"
                       loading="lazy"
@@ -128,13 +149,21 @@ export default function CartPageClient() {
                   </div>
                   <div className="szCartItemDetails">
                     <span className="szCartVendorTag">
-                      {row.product.vendor?.storeName || row.product.vendor || "سودان زون"}
+                      {row.vendor}
                     </span>
-                    <Link href={`/products/${row.product.id}`} className="szCartItemTitleLink">
-                      <strong className="szCartItemTitle">{row.product.name}</strong>
+                    <Link href={"/products/" + row.productId} className="szCartItemTitleLink">
+                      <strong className="szCartItemTitle">{row.name}</strong>
                     </Link>
+
+                    {row.variantTitle && (
+                      <div className="szCartVariantBadge">
+                        <span>🏷️ الخيار: <strong>{row.variantTitle}</strong></span>
+                        {row.sku && <small className="szCartSkuText">({row.sku})</small>}
+                      </div>
+                    )}
+
                     <span className="szCartItemUnitPrice">
-                      {Number(row.product.price).toLocaleString()} ج.س للقطعة
+                      {Number(row.price).toLocaleString()} ج.س للقطعة
                     </span>
                   </div>
                 </div>
@@ -143,7 +172,7 @@ export default function CartPageClient() {
                   <div className="szCartQtyWrap">
                     <button
                       type="button"
-                      onClick={() => updateQuantity(row.productId, row.quantity - 1)}
+                      onClick={() => updateQuantity(row.cartItemId, row.quantity - 1)}
                       className="szQtySmallBtn"
                       disabled={row.quantity <= 1}
                       aria-label="تقليل الكمية"
@@ -153,7 +182,7 @@ export default function CartPageClient() {
                     <span className="szQtySmallVal">{row.quantity}</span>
                     <button
                       type="button"
-                      onClick={() => updateQuantity(row.productId, row.quantity + 1)}
+                      onClick={() => updateQuantity(row.cartItemId, row.quantity + 1)}
                       className="szQtySmallBtn"
                       aria-label="زيادة الكمية"
                     >
@@ -161,83 +190,66 @@ export default function CartPageClient() {
                     </button>
                   </div>
 
-                  <div className="szCartSubtotalBlock">
-                    <span className="szCartSubtotalLabel">الإجمالي:</span>
-                    <strong className="szCartSubtotalValue">
+                  <div className="szCartItemSubtotalBox">
+                    <strong className="szCartItemSubtotal">
                       {row.subtotal.toLocaleString()} ج.س
                     </strong>
+                    <button
+                      type="button"
+                      onClick={() => removeItem(row.cartItemId)}
+                      className="szCartItemRemoveBtn"
+                    >
+                      حذف
+                    </button>
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => removeItem(row.productId)}
-                    className="szCartDeleteBtn"
-                    title="حذف المنتج من السلة"
-                    aria-label="حذف من السلة"
-                  >
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-                      <polyline points="3 6 5 6 21 6" />
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                    </svg>
-                    <span>حذف</span>
-                  </button>
                 </div>
               </div>
             ))}
 
-            <div className="szCartBottomBar">
-              <Link href="/products" className="szContinueShoppingLink">
-                ‹ متابعة التسوق وإضافة منتجات
-              </Link>
-              <button type="button" onClick={clearCart} className="szClearCartBtn">
+            <div className="szCartFooterActions">
+              <button type="button" onClick={clearCart} className="szCartClearBtn">
                 تفريغ السلة بالكامل
               </button>
+              <Link href="/products" className="szCartContinueLink">
+                ← إضافة المزيد من المنتجات
+              </Link>
             </div>
-            {message && <p className="szCartFeedbackMsg">{message}</p>}
           </div>
 
-          {/* Checkout & Summary Panel (Right Column) */}
-          <div className="szCartSidebar">
-            {/* Financial Summary */}
-            <div className="szOrderSummaryCard">
-              <h3 className="szSummaryTitle">ملخص الطلب</h3>
-              <div className="szSummaryRows">
-                <div className="szSummaryRow">
-                  <span>مجموع المنتجات ({totalCount})</span>
-                  <strong>{itemsTotal.toLocaleString()} ج.س</strong>
-                </div>
-                <div className="szSummaryRow">
-                  <span>تكلفة الشحن والتوصيل</span>
-                  <strong>
-                    {shippingCost === 0 ? (
-                      <span className="szFreeShipping">مجاني (طلب أكثر من 50,000)</span>
-                    ) : (
-                      `${shippingCost.toLocaleString()} ج.س`
-                    )}
-                  </strong>
-                </div>
-                <div className="szSummaryRow szSummaryRow--total">
-                  <span>الإجمالي النهائي</span>
-                  <strong className="szGrandTotal">{grandTotal.toLocaleString()} ج.س</strong>
-                </div>
+          {/* Right Column: Checkout & Summary Card */}
+          <div className="szCartSummaryCol">
+            <div className="szCartSummaryCard">
+              <h3 className="szSummaryCardTitle">ملخص الطلب</h3>
+
+              <div className="szSummaryRow">
+                <span>مجموع المنتجات ({totalCount} قطعة):</span>
+                <strong>{itemsTotal.toLocaleString()} ج.س</strong>
               </div>
 
-              <div className="szCartPaymentNotice">
-                <span>💵 الدفع عند الاستلام متاح</span>
-                <span>🏦 إمكانية التحويل عبر بنكك مباشرة</span>
+              <div className="szSummaryRow">
+                <span>تكلفة الشحن والتوصيل:</span>
+                {shippingCost === 0 ? (
+                  <span className="szFreeShippingTag">مجاني (عرض خاص)</span>
+                ) : (
+                  <strong>{shippingCost.toLocaleString()} ج.س</strong>
+                )}
+              </div>
+
+              <div className="szSummaryDivider" />
+
+              <div className="szSummaryRow szSummaryRow--grand">
+                <span>الإجمالي النهائي:</span>
+                <strong className="szGrandTotalVal">{grandTotal.toLocaleString()} ج.س</strong>
               </div>
             </div>
 
-            {/* Direct Checkout Form */}
-            <CheckoutForm
-              items={rows.map((row) => ({
-                productId: row.productId,
-                quantity: row.quantity,
-              }))}
-            />
+            {/* Seamless One-Step Checkout Form */}
+            <CheckoutForm items={checkoutItems} />
           </div>
         </div>
       )}
+
+      {message && <div className="szCartToast">{message}</div>}
     </div>
   );
 }

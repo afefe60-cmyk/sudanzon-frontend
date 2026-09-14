@@ -1,5 +1,6 @@
 "use client";
 
+import ProductOptionsBuilder from "./ProductOptionsBuilder";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { apiForm, apiJson } from "../lib/api";
@@ -28,6 +29,9 @@ export default function AdminProductsClient() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [hasVariants, setHasVariants] = useState(false);
+  const [options, setOptions] = useState([]);
+  const [variants, setVariants] = useState([]);
   const [galleryImages, setGalleryImages] = useState([]);
   const [search, setSearch] = useState("");
   const [selectedCat, setSelectedCat] = useState("ALL");
@@ -140,6 +144,9 @@ export default function AdminProductsClient() {
   };
 
   const resetForm = () => {
+    setHasVariants(false);
+    setOptions([]);
+    setVariants([]);
     setForm(emptyForm);
     setGalleryImages([]);
     setIsEditing(false);
@@ -154,6 +161,9 @@ export default function AdminProductsClient() {
   };
 
   const editProduct = (product) => {
+    setHasVariants(Boolean(product.hasVariants));
+    setOptions(product.options || []);
+    setVariants(product.variants || []);
     setIsEditing(true);
     const parsedImages = parseImageList(product.images);
     const currentMainImage = product.image || parsedImages[0] || "";
@@ -203,6 +213,11 @@ export default function AdminProductsClient() {
     const existingImgs = galleryImages.filter((item) => !item.file && item.url).map((item) => item.url);
 
     newFiles.forEach((file) => payload.append("imageFiles", file));
+    payload.append("hasVariants", String(hasVariants));
+    if (hasVariants) {
+      payload.append("options", JSON.stringify(options));
+      payload.append("variants", JSON.stringify(variants));
+    }
     payload.append("existingImages", JSON.stringify(existingImgs));
     payload.append("primaryIsNew", String(Boolean(galleryImages[0]?.file)));
     if (galleryImages[0]?.url && !galleryImages[0]?.file) {

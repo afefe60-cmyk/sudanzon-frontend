@@ -5,8 +5,8 @@ import Link from "next/link";
 import { apiForm, apiJson } from "../lib/api";
 import { getProductImage, getProductImages, resolveImageUrl } from "../lib/media";
 import { products as fallbackProducts } from "../lib/mock-data";
-
 import MultiImageUploader from "./MultiImageUploader";
+import ProductOptionsBuilder from "./ProductOptionsBuilder";
 
 const emptyForm = {
   id: "",
@@ -46,6 +46,9 @@ export default function SellerProductsClient() {
   const [categories, setCategories] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("ALL");
+  const [hasVariants, setHasVariants] = useState(false);
+  const [options, setOptions] = useState([]);
+  const [variants, setVariants] = useState([]);
 
   const getToken = () => (typeof window === "undefined" ? "" : localStorage.getItem("sudanzonToken") || "");
 
@@ -134,6 +137,11 @@ export default function SellerProductsClient() {
     const existingImgs = galleryImages.filter((item) => !item.file && item.url).map((item) => item.url);
 
     newFiles.forEach((file) => payload.append("imageFiles", file));
+    payload.append("hasVariants", String(hasVariants));
+    if (hasVariants) {
+      payload.append("options", JSON.stringify(options));
+      payload.append("variants", JSON.stringify(variants));
+    }
     payload.append("existingImages", JSON.stringify(existingImgs));
     payload.append("primaryIsNew", String(Boolean(galleryImages[0]?.file)));
     if (galleryImages[0]?.url && !galleryImages[0]?.file) {
