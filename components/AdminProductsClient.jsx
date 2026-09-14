@@ -652,6 +652,20 @@ export default function AdminProductsClient() {
             />
           </div>
 
+          {/* Universal Product Options and Variants Builder */}
+          <div className="szFormGroup" style={{ marginTop: "1rem" }}>
+            <ProductOptionsBuilder
+              hasVariants={hasVariants}
+              setHasVariants={setHasVariants}
+              options={options}
+              setOptions={setOptions}
+              variants={variants}
+              setVariants={setVariants}
+              basePrice={Number(form.price) || 0}
+              galleryImages={galleryImages}
+            />
+          </div>
+
           <div className="szFormActionButtons">
             <button className="szSubmitProductBtn" type="submit" disabled={saving}>
               {saving ? "جارِ الحفظ..." : isEditing ? "✓ حفظ التعديلات" : "✓ إضافة المنتج الآن"}

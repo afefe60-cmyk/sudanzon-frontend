@@ -115,6 +115,9 @@ export default function SellerProductsClient() {
   };
 
   const resetForm = () => {
+    setHasVariants(false);
+    setOptions([]);
+    setVariants([]);
     setForm(emptyForm);
     setGalleryImages([]);
   };
@@ -169,6 +172,9 @@ export default function SellerProductsClient() {
   };
 
   const editProduct = (product) => {
+    setHasVariants(Boolean(product.hasVariants));
+    setOptions(product.options || []);
+    setVariants(product.variants || []);
     const allImgs = getProductImages(product);
     setForm({
       id: product.id,
@@ -511,6 +517,20 @@ export default function SellerProductsClient() {
                   ))}
                 </select>
               </div>
+            </div>
+
+            {/* Universal Product Options and Variants Builder */}
+            <div className="szFormGroup" style={{ marginTop: "1rem" }}>
+              <ProductOptionsBuilder
+                hasVariants={hasVariants}
+                setHasVariants={setHasVariants}
+                options={options}
+                setOptions={setOptions}
+                variants={variants}
+                setVariants={setVariants}
+                basePrice={Number(form.price) || 0}
+                galleryImages={galleryImages}
+              />
             </div>
 
             <div className="szFormActionButtons">
