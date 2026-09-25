@@ -1,8 +1,9 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import {
   SUDAN_CITIES,
+  KHARTOUM_LOCALITIES,
   getUserSavedLocation,
   requestUserLocation,
   setUserManualCity,
@@ -15,6 +16,8 @@ export default function LocationPrompt() {
   const [currentLocation, setCurrentLocation] = useState(null);
   const [showManualSelect, setShowManualSelect] = useState(false);
   const [selectedCity, setSelectedCity] = useState("الخرطوم");
+  const [selectedNeighborhood, setSelectedNeighborhood] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     // Check saved location
@@ -22,6 +25,7 @@ export default function LocationPrompt() {
     if (saved) {
       setCurrentLocation(saved);
       setSelectedCity(saved.city || "الخرطوم");
+      setSelectedNeighborhood(saved.suburb || "");
     } else {
       // If not prompted yet, show subtle prompt after 2 seconds
       const hasPrompted = localStorage.getItem("sudanzon_location_prompted");
@@ -35,6 +39,7 @@ export default function LocationPrompt() {
 
     const handleOpenModal = () => {
       setErrorMsg("");
+      setShowManualSelect(false);
       setIsOpen(true);
     };
 
@@ -42,6 +47,7 @@ export default function LocationPrompt() {
       if (e.detail) {
         setCurrentLocation(e.detail);
         setSelectedCity(e.detail.city || "الخرطوم");
+        setSelectedNeighborhood(e.detail.suburb || "");
       }
     };
 
@@ -60,6 +66,8 @@ export default function LocationPrompt() {
     try {
       const loc = await requestUserLocation();
       setCurrentLocation(loc);
+      setSelectedCity(loc.city || "الخرطوم");
+      setSelectedNeighborhood(loc.suburb || "");
       setIsOpen(false);
     } catch (err) {
       setErrorMsg(err.message || "تعذر تحديد الموقع تلقائياً، يمكنك اختياره يدوياً من القائمة.");
@@ -70,7 +78,7 @@ export default function LocationPrompt() {
   };
 
   const handleSaveManual = () => {
-    const loc = setUserManualCity(selectedCity);
+    const loc = setUserManualCity(selectedCity, selectedNeighborhood);
     setCurrentLocation(loc);
     setIsOpen(false);
   };
@@ -79,6 +87,17 @@ export default function LocationPrompt() {
     localStorage.setItem("sudanzon_location_prompted", "true");
     setIsOpen(false);
   };
+
+  const isKhartoumLocality = ["الخرطوم", "شرق النيل", "بحري", "أم درمان"].includes(selectedCity);
+  const availableNeighborhoods = isKhartoumLocality
+    ? KHARTOUM_LOCALITIES.filter((k) => k.locality === selectedCity).map((k) => k.neighborhood)
+    : [];
+
+  const filteredCities = SUDAN_CITIES.filter(
+    (c) =>
+      c.name.includes(searchQuery.trim()) ||
+      c.state.includes(searchQuery.trim())
+  );
 
   if (!isOpen) return null;
 
@@ -110,7 +129,7 @@ export default function LocationPrompt() {
           تحديد موقعك في سودان زون
         </h3>
         <p className="szLocDesc">
-          اسمح للموقع أو التطبيق بالوصول إلى موقعك الجغرافي لتوفير أفضل تجربة مخصصة لك في السودان:
+          حدد موقعك الدقيق للحصول على أسعار توصيل دقيقة وسرعة في وصول الطلبات:
         </p>
 
         {/* 3 User Types Benefits */}
@@ -130,14 +149,6 @@ export default function LocationPrompt() {
               <p>استلام أقرب طلبات الاستلام والتسليم وتتبع خط السير الجغرافي لحظياً.</p>
             </div>
           </div>
-
-          <div className="szLocBenefitItem">
-            <span className="szLocBenefitIcon">🏪</span>
-            <div>
-              <strong>للتجار والمتاجر:</strong>
-              <p>تثبيت عنوان متجرك ومستودعك على الخريطة ليسهل على المندوبين الوصول إليك.</p>
-            </div>
-          </div>
         </div>
 
         {errorMsg && (
@@ -148,8 +159,32 @@ export default function LocationPrompt() {
 
         {currentLocation && (
           <div className="szLocCurrentDetected">
-            <span>📍 موقعك المحدد حالياً:</span>
-            <strong>{currentLocation.formatted || currentLocation.city}</strong>
+            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+              <span style={{ fontSize: "0.78rem", color: "#94a3b8" }}>📍 موقعك المحدد حالياً:</span>
+              <strong style={{ fontSize: "0.92rem", color: "#34d399" }}>
+                {currentLocation.formatted || currentLocation.city}
+              </strong>
+              {currentLocation.accuracy ? (
+                <span style={{ fontSize: "0.7rem", color: "#cbd5e1" }}>
+                  دقة الإشارة: ±{currentLocation.accuracy} متر {currentLocation.source === "gps" ? "(GPS حقيقي)" : ""}
+                </span>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowManualSelect(!showManualSelect)}
+              style={{
+                background: "rgba(255, 255, 255, 0.1)",
+                border: "1px solid rgba(255, 255, 255, 0.2)",
+                color: "#e2e8f0",
+                borderRadius: "6px",
+                padding: "4px 8px",
+                fontSize: "0.75rem",
+                cursor: "pointer",
+              }}
+            >
+              تعديل ✏️
+            </button>
           </div>
         )}
 
@@ -162,9 +197,9 @@ export default function LocationPrompt() {
             className="szLocBtnPrimary"
           >
             {loading ? (
-              <span>⏳ جاري تحديد موقعك عبر GPS...</span>
+              <span>⏳ جاري تحديد موقعك بدقة عبر GPS...</span>
             ) : (
-              <span>📍 تفعيل وتحديد موقعي الحالي تلقائياً</span>
+              <span>📍 تحديد وتحديث موقعي الحالي تلقائياً (GPS)</span>
             )}
           </button>
 
@@ -174,34 +209,82 @@ export default function LocationPrompt() {
               onClick={() => setShowManualSelect(true)}
               className="szLocBtnSecondary"
             >
-              🗺️ اختيار المدينة يدوياً من القائمة
+              🗺️ اختيار المدينة والحي يدوياً من القائمة
             </button>
           ) : (
             <div className="szLocManualPicker">
-              <label htmlFor="szCitySelect" className="szLocPickerLabel">
-                اختر مدينتك أو ولايتك:
+              <label htmlFor="szSearchInput" className="szLocPickerLabel">
+                بحث واختيار المدينة / الولاية:
               </label>
-              <div className="szLocPickerRow">
+              
+              <input
+                id="szSearchInput"
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="ابحث عن مدينتك (مثل: القضارف، شرق النيل، بورتسودان...)"
+                style={{
+                  width: "100%",
+                  background: "#0f172a",
+                  border: "1px solid #334155",
+                  color: "#ffffff",
+                  padding: "8px 10px",
+                  borderRadius: "8px",
+                  fontSize: "0.82rem",
+                  marginBottom: "8px",
+                  boxSizing: "border-box",
+                }}
+              />
+
+              <div className="szLocPickerRow" style={{ marginBottom: "8px" }}>
                 <select
                   id="szCitySelect"
                   value={selectedCity}
-                  onChange={(e) => setSelectedCity(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedCity(e.target.value);
+                    setSelectedNeighborhood("");
+                  }}
                   className="szLocSelect"
                 >
-                  {SUDAN_CITIES.map((c) => (
+                  {filteredCities.map((c) => (
                     <option key={c.name} value={c.name}>
                       {c.name} ({c.state})
                     </option>
                   ))}
                 </select>
-                <button
-                  type="button"
-                  onClick={handleSaveManual}
-                  className="szLocBtnSaveManual"
-                >
-                  تأكيد
-                </button>
               </div>
+
+              {/* Neighborhood picker for Khartoum & its localities */}
+              {isKhartoumLocality && availableNeighborhoods.length > 0 && (
+                <div style={{ marginBottom: "8px" }}>
+                  <label htmlFor="szNeighborhoodSelect" className="szLocPickerLabel">
+                    اختر الحي أو المنطقة ({selectedCity}):
+                  </label>
+                  <select
+                    id="szNeighborhoodSelect"
+                    value={selectedNeighborhood}
+                    onChange={(e) => setSelectedNeighborhood(e.target.value)}
+                    className="szLocSelect"
+                    style={{ width: "100%" }}
+                  >
+                    <option value="">-- كل أنحاء {selectedCity} --</option>
+                    {availableNeighborhoods.map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleSaveManual}
+                className="szLocBtnPrimary"
+                style={{ marginTop: "4px", padding: "10px" }}
+              >
+                تأكيد الموقع وحفظه ✅
+              </button>
             </div>
           )}
 
