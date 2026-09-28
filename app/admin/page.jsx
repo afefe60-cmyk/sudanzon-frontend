@@ -9,10 +9,11 @@ import AdminVendorsClient from "../../components/AdminVendorsClient";
 import AdminCategoriesClient from "../../components/AdminCategoriesClient";
 import AdminProductsClient from "../../components/AdminProductsClient";
 import AdminCouriersClient from "../../components/AdminCouriersClient";
+import AdminAdsClient from "../../components/AdminAdsClient";
 import RoleGate from "../../components/RoleGate";
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState("orders"); // 'orders' | 'couriers' | 'users' | 'vendors' | 'products' | 'categories'
+  const [activeTab, setActiveTab] = useState("orders"); // 'orders' | 'couriers' | 'users' | 'vendors' | 'products' | 'categories' | 'ads'
 
   return (
     <main className="szPageShell">
@@ -165,6 +166,13 @@ export default function AdminPage() {
                 >
                   <span>🏷️ الأقسام والتصنيفات</span>
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("ads")}
+                  className={`szAdminTabBtn ${activeTab === "ads" ? "is-active" : ""}`}
+                >
+                  <span>📢 الإعلانات والشركاء</span>
+                </button>
               </div>
 
               {/* Tab Contents */}
@@ -175,6 +183,7 @@ export default function AdminPage() {
                 {activeTab === "vendors" && <AdminVendorsClient />}
                 {activeTab === "products" && <AdminProductsClient />}
                 {activeTab === "categories" && <AdminCategoriesClient />}
+                {activeTab === "ads" && <AdminAdsClient />}
               </div>
             </div>
           </RoleGate>
