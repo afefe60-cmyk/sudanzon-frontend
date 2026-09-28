@@ -2,6 +2,7 @@ import Link from "next/link";
 import SiteHeader from "../../../components/SiteHeader";
 import ProductDetailClient from "../../../components/ProductDetailClient";
 import ProductCard from "../../../components/ProductCard";
+import ProductAdBanner from "../../../components/ProductAdBanner";
 import { apiJson } from "../../../lib/api";
 import { getProductImage } from "../../../lib/media";
 import { products as fallbackProducts } from "../../../lib/mock-data";
@@ -133,10 +134,12 @@ export default async function ProductPage({ params }) {
     );
   }
 
-  const similarProducts = await loadSimilarProducts(
-    product.category?.name || product.category,
-    product.id
-  );
+  const [similarProducts, adsResult] = await Promise.all([
+    loadSimilarProducts(product.category?.name || product.category, product.id),
+    apiJson("/api/ads?activeOnly=true", { cache: "no-store" }).catch(() => ({ items: [] })),
+  ]);
+
+  const ads = Array.isArray(adsResult?.items) ? adsResult.items : [];
   const specs = buildSpecs(product);
 
   return (
@@ -145,6 +148,9 @@ export default async function ProductPage({ params }) {
 
       <div className="container szProductDetailContainer">
         <ProductDetailClient product={product} specs={specs} />
+
+        {/* Sponsored Partner Banner on Product Details */}
+        <ProductAdBanner ads={ads} />
 
         {/* Similar Products Shelf */}
         {similarProducts.length > 0 && (

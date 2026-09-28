@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { apiJson } from "../lib/api";
-import { getProductImage } from "../lib/media";
+import { getProductImage, resolveImageUrl } from "../lib/media";
+import { getAdActionHref, trackAdClick, trackAdView } from "../lib/ads";
 
-const slides = [
+const defaultSlides = [
   {
-    id: 1,
+    id: "default-1",
     tag: "🔥 مهرجان التوفير الأكبر",
     title: "أقوى عروض الموسم وخصومات حتى 45%",
     subtitle: "تسوق أفضل الهواتف، العطور الفاخرة، والإلكترونيات مع شحن فوري ودفع عند الاستلام وبنكك.",
@@ -16,9 +17,10 @@ const slides = [
     ctaSecondary: { label: "وصل حديثاً ✨", href: "/products?sort=new" },
     badgeText: "خصم يصل 45%",
     accentColor: "#fbbf24",
+    isAd: false,
   },
   {
-    id: 2,
+    id: "default-2",
     tag: "⚡ عالم التكنولوجيا والابتكار",
     title: "أحدث الأجهزة الذكية واللابتوبات الأصلية",
     subtitle: "اكتشف أحدث الهواتف الذكية والساعات وسماعات الصوت الفاخرة بضمان معتمد وأفضل الأسعار في السوق.",
@@ -27,9 +29,10 @@ const slides = [
     ctaSecondary: { label: "تصفح الموبايلات", href: "/products?category=موبايلات" },
     badgeText: "أجهزة أصلية 100%",
     accentColor: "#38bdf8",
+    isAd: false,
   },
   {
-    id: 3,
+    id: "default-3",
     tag: "👑 الأناقة والعطور الملكية",
     title: "عطور شرقية فاخرة ومقتنيات مميزة",
     subtitle: "تشكيلة حصرية من أرقى العطور والعود الملكي والأزياء العصرية لتكتمل إطلالتك في كل مناسبة.",
@@ -38,10 +41,11 @@ const slides = [
     ctaSecondary: { label: "أزياء وأحذية", href: "/products?category=ملابس" },
     badgeText: "ثبات وفوحان راقٍ",
     accentColor: "#f472b6",
+    isAd: false,
   },
 ];
 
-export default function PromoHeroSlider() {
+export default function PromoHeroSlider({ ads = [] }) {
   const [active, setActive] = useState(0);
   const [progress, setProgress] = useState(0);
   const [spotlight, setSpotlight] = useState(null);
@@ -50,6 +54,38 @@ export default function PromoHeroSlider() {
 
   const duration = 6500; // ms per slide
   const stepTime = 50;
+
+  // Format ad banners into slides
+  const adSlides = (ads || [])
+    .filter((ad) => ad.placement === "HOME_TOP_SLIDER" && ad.isActive)
+    .map((ad) => ({
+      id: `ad-${ad.id}`,
+      adId: ad.id,
+      isAd: true,
+      tag: ad.sponsorName ? `✦ شريك رسمي • ${ad.sponsorName}` : "✦ إعلان ممول",
+      title: ad.title,
+      subtitle: ad.description || "عروض وخدمات مميزة لعملاء سودان زون بالتعاون مع شركائنا المعتمدين.",
+      image: resolveImageUrl(ad.imageUrl),
+      sponsorLogo: ad.sponsorLogo ? resolveImageUrl(ad.sponsorLogo) : null,
+      ctaPrimary: {
+        label:
+          ad.actionType === "WHATSAPP"
+            ? "💬 تواصل عبر واتساب"
+            : ad.actionType === "PHONE_CALL"
+            ? "📞 اتصال مباشر"
+            : ad.actionType === "APP_STORE"
+            ? "📲 تحميل التطبيق"
+            : "استكشف العرض الآن",
+        href: getAdActionHref(ad),
+        isExternal: true,
+      },
+      ctaSecondary: { label: "تصفح المتجر", href: "/products" },
+      badgeText: "ممول",
+      accentColor: "#f59e0b",
+      adRaw: ad,
+    }));
+
+  const allSlides = adSlides.length > 0 ? [...adSlides, ...defaultSlides] : defaultSlides;
 
   useEffect(() => {
     let isMounted = true;
@@ -60,7 +96,7 @@ export default function PromoHeroSlider() {
         }
       })
       .catch(() => {
-        // Fallback gracefully to default presets
+        // Fallback gracefully
       });
     return () => {
       isMounted = false;
@@ -80,7 +116,7 @@ export default function PromoHeroSlider() {
     }, stepTime);
 
     timerRef.current = setInterval(() => {
-      setActive((curr) => (curr + 1) % slides.length);
+      setActive((curr) => (curr + 1) % allSlides.length);
       setProgress(0);
     }, duration);
   };
@@ -91,10 +127,18 @@ export default function PromoHeroSlider() {
       if (timerRef.current) clearInterval(timerRef.current);
       if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
     };
-  }, [active]);
+  }, [active, allSlides.length]);
+
+  // Track impression for ad slides
+  useEffect(() => {
+    const currentSlide = allSlides[active];
+    if (currentSlide?.isAd && currentSlide.adId) {
+      trackAdView(currentSlide.adId);
+    }
+  }, [active, allSlides]);
 
   const goToSlide = (idx) => {
-    setActive((idx + slides.length) % slides.length);
+    setActive((idx + allSlides.length) % allSlides.length);
   };
 
   const pause = () => {
@@ -106,7 +150,7 @@ export default function PromoHeroSlider() {
     resetTimer();
   };
 
-  const slide = slides[active];
+  const slide = allSlides[active] || allSlides[0];
 
   // Dynamic Spotlight Deal of the Day & Most Popular
   const deal = spotlight?.dealOfTheDay;
@@ -161,7 +205,14 @@ export default function PromoHeroSlider() {
 
             <div className="szHeroSlideContent">
               <div className="szHeroTopPills">
-                <span className="szHeroPillBadge" style={{ borderColor: slide.accentColor, color: slide.accentColor }}>
+                <span
+                  className="szHeroPillBadge"
+                  style={{
+                    borderColor: slide.accentColor,
+                    color: slide.accentColor,
+                    backgroundColor: slide.isAd ? "rgba(15, 23, 42, 0.75)" : undefined,
+                  }}
+                >
                   {slide.tag}
                 </span>
                 <span className="szHeroDiscountPill">{slide.badgeText}</span>
@@ -171,12 +222,28 @@ export default function PromoHeroSlider() {
               <p className="szHeroMainSubtitle">{slide.subtitle}</p>
 
               <div className="szHeroMainActions">
-                <Link className="szHeroCtaPrimary" href={slide.ctaPrimary.href}>
-                  <span>{slide.ctaPrimary.label}</span>
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M19 12H5M12 19l-7-7 7-7" />
-                  </svg>
-                </Link>
+                {slide.isAd ? (
+                  <a
+                    className="szHeroCtaPrimary"
+                    href={slide.ctaPrimary.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => trackAdClick(slide.adId)}
+                  >
+                    <span>{slide.ctaPrimary.label}</span>
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M19 12H5M12 19l-7-7 7-7" />
+                    </svg>
+                  </a>
+                ) : (
+                  <Link className="szHeroCtaPrimary" href={slide.ctaPrimary.href}>
+                    <span>{slide.ctaPrimary.label}</span>
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M19 12H5M12 19l-7-7 7-7" />
+                    </svg>
+                  </Link>
+                )}
+
                 <Link className="szHeroCtaSecondary" href={slide.ctaSecondary.href}>
                   {slide.ctaSecondary.label}
                 </Link>
@@ -219,7 +286,7 @@ export default function PromoHeroSlider() {
 
             {/* Modern Indicators with Progress */}
             <div className="szHeroNavIndicators">
-              {slides.map((s, idx) => (
+              {allSlides.map((s, idx) => (
                 <button
                   key={s.id}
                   type="button"

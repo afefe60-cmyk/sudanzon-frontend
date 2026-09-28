@@ -2,6 +2,7 @@ import Link from "next/link";
 import CategoryStrip from "../components/CategoryStrip";
 import MarketPulse from "../components/MarketPulse";
 import PromoHeroSlider from "../components/PromoHeroSlider";
+import PartnerSponsorStrip from "../components/PartnerSponsorStrip";
 import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import ProductCard from "../components/ProductCard";
@@ -14,23 +15,27 @@ export const fetchCache = "force-no-store";
 
 async function loadHomeData() {
   try {
-    const [productsResult, categoriesResult] = await Promise.all([
+    const [productsResult, categoriesResult, adsResult] = await Promise.all([
       apiJson("/api/products", { cache: "no-store" }),
       apiJson("/api/products/categories", { cache: "no-store" }),
+      apiJson("/api/ads?activeOnly=true", { cache: "no-store" }).catch(() => ({ items: [] })),
     ]);
 
     const liveProducts = productsResult?.items;
     const liveCategories = categoriesResult?.items;
+    const liveAds = adsResult?.items;
 
     return {
       products: Array.isArray(liveProducts) && liveProducts.length > 0 ? liveProducts : fallbackProducts,
       categories: Array.isArray(liveCategories) && liveCategories.length > 0 ? liveCategories : fallbackCategories,
+      ads: Array.isArray(liveAds) ? liveAds : [],
     };
   } catch (err) {
     console.error("Home data fetch error:", err);
     return {
       products: fallbackProducts,
       categories: fallbackCategories,
+      ads: [],
     };
   }
 }
@@ -49,7 +54,7 @@ const categoryIcons = {
 };
 
 export default async function HomePage() {
-  const { products, categories } = await loadHomeData();
+  const { products, categories, ads } = await loadHomeData();
 
   const sections = [
     {
@@ -91,13 +96,6 @@ export default async function HomePage() {
     },
   ];
 
-  const featuredStores = [
-    { title: "متجر طيب الجنان للعطور", subtitle: "عطور وهدايا مختارة", image: "/products/perfume.jpg" },
-    { title: "متجر إلكترونيات الخرطوم", subtitle: "هواتف وسماعات وأجهزة", image: "/products/electronics.jpg" },
-    { title: "متجر أزياء النيلين", subtitle: "ملابس وأحذية عصرية", image: "/products/fashion.jpg" },
-    { title: "متجر البيت العصري", subtitle: "أدوات منزلية ومطبخ", image: "/products/home.jpg" },
-  ];
-
   const trustCards = [
     {
       icon: "🛡️",
@@ -125,14 +123,17 @@ export default async function HomePage() {
     <main className="szPageShell">
       <SiteHeader />
 
-      {/* Hero Banner Slider */}
-      <PromoHeroSlider />
+      {/* Hero Banner Slider (with live sponsored ads support) */}
+      <PromoHeroSlider ads={ads} />
 
       {/* Category Strip */}
       <CategoryStrip categories={categories} categoryIcons={categoryIcons} />
 
-      {/* Market Live Pulse (100% Real Live Database Metrics) */}
+      {/* Market Live Pulse */}
       <MarketPulse products={products} categories={categories} />
+
+      {/* Featured Partner & Sponsor Strip (HOME_FEED_CARD) */}
+      <PartnerSponsorStrip ads={ads} />
 
       {/* Product Sections */}
       {sections.map((section) => (
