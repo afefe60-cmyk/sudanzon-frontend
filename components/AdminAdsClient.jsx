@@ -44,7 +44,7 @@ export default function AdminAdsClient() {
       const result = await apiJson("/api/admin/ads", {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
-      setAds(result.ads || []);
+      setAds(result.ads || result.items || []);
       setErrorMessage("");
     } catch (error) {
       setErrorMessage(error.message || "تعذر تحميل قائمة الإعلانات");

@@ -1,12 +1,30 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { resolveImageUrl } from "../lib/media";
 import { getAdActionHref, trackAdClick, trackAdView } from "../lib/ads";
+import { apiJson } from "../lib/api";
 
 export default function PartnerSponsorStrip({ ads = [] }) {
-  const feedAds = (ads || []).filter((ad) => ad.placement === "HOME_FEED_CARD" && ad.isActive);
+  const [liveAds, setLiveAds] = useState(ads || []);
   const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (!ads || ads.length === 0) {
+      apiJson("/api/ads?activeOnly=true")
+        .then((data) => {
+          const list = data?.items || data?.ads || [];
+          if (Array.isArray(list) && list.length > 0) {
+            setLiveAds(list);
+          }
+        })
+        .catch(() => {});
+    } else {
+      setLiveAds(ads);
+    }
+  }, [ads]);
+
+  const feedAds = (liveAds || []).filter((ad) => ad.placement === "HOME_FEED_CARD" && ad.isActive);
 
   useEffect(() => {
     if (!feedAds.length || !containerRef.current) return;
@@ -88,7 +106,7 @@ export default function PartnerSponsorStrip({ ads = [] }) {
                     </div>
                   </div>
 
-                  {ad.description && <p className="szPartnerDesc">{ad.description}</p>}
+                  {(ad.subtitle || ad.description) && <p className="szPartnerDesc">{ad.subtitle || ad.description}</p>}
 
                   <div className="szPartnerActionRow">
                     <a

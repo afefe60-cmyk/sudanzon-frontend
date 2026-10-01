@@ -46,6 +46,7 @@ const defaultSlides = [
 ];
 
 export default function PromoHeroSlider({ ads = [] }) {
+  const [liveAds, setLiveAds] = useState(ads || []);
   const [active, setActive] = useState(0);
   const [progress, setProgress] = useState(0);
   const [spotlight, setSpotlight] = useState(null);
@@ -55,18 +56,33 @@ export default function PromoHeroSlider({ ads = [] }) {
   const duration = 6500; // ms per slide
   const stepTime = 50;
 
+  useEffect(() => {
+    if (!ads || ads.length === 0) {
+      apiJson("/api/ads?activeOnly=true")
+        .then((data) => {
+          const list = data?.items || data?.ads || [];
+          if (Array.isArray(list) && list.length > 0) {
+            setLiveAds(list);
+          }
+        })
+        .catch(() => {});
+    } else {
+      setLiveAds(ads);
+    }
+  }, [ads]);
+
   // Format ad banners into slides
-  const adSlides = (ads || [])
+  const adSlides = (liveAds || [])
     .filter((ad) => ad.placement === "HOME_TOP_SLIDER" && ad.isActive)
     .map((ad) => ({
       id: `ad-${ad.id}`,
       adId: ad.id,
       isAd: true,
-      tag: ad.sponsorName ? `✦ شريك رسمي • ${ad.sponsorName}` : "✦ إعلان ممول",
+      tag: ad.badgeText || (ad.sponsorName ? `✦ شريك رسمي • ${ad.sponsorName}` : "✦ إعلان ممول"),
       title: ad.title,
-      subtitle: ad.description || "عروض وخدمات مميزة لعملاء سودان زون بالتعاون مع شركائنا المعتمدين.",
+      subtitle: ad.subtitle || ad.description || "عروض وخدمات مميزة لعملاء سودان زون بالتعاون مع شركائنا المعتمدين.",
       image: resolveImageUrl(ad.imageUrl),
-      sponsorLogo: ad.sponsorLogo ? resolveImageUrl(ad.sponsorLogo) : null,
+      sponsorLogo: ad.logoUrl || ad.sponsorLogo ? resolveImageUrl(ad.logoUrl || ad.sponsorLogo) : null,
       ctaPrimary: {
         label:
           ad.actionType === "WHATSAPP"
@@ -80,7 +96,7 @@ export default function PromoHeroSlider({ ads = [] }) {
         isExternal: true,
       },
       ctaSecondary: { label: "تصفح المتجر", href: "/products" },
-      badgeText: "ممول",
+      badgeText: ad.badgeText || "ممول",
       accentColor: "#f59e0b",
       adRaw: ad,
     }));
