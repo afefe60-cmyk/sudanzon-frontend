@@ -12412,3 +12412,14 @@ select {
 }
 
 
+
+/* Enhanced Ad Hero Slide for Mobile & Desktop */
+.szHeroMainSlider.is-ad-slide .szHeroSlideOverlay {
+  background: linear-gradient(to top, rgba(15, 23, 42, 0.92) 0%, rgba(15, 23, 42, 0.45) 45%, rgba(15, 23, 42, 0.15) 100%);
+}
+@media (max-width: 768px) {
+  .szHeroMainSlider.is-ad-slide .szHeroSlideBgImg {
+    min-height: 280px;
+    object-fit: cover;
+  }
+}

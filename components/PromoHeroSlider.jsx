@@ -201,7 +201,7 @@ export default function PromoHeroSlider({ ads = [] }) {
         <div className="szHeroMasterGrid">
           {/* Main Large Slider (70%) */}
           <div
-            className="szHeroMainSlider"
+            className={`szHeroMainSlider ${slide.isAd ? "is-ad-slide" : ""}`}
             onMouseEnter={pause}
             onMouseLeave={resume}
           >
