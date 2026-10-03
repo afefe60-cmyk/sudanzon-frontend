@@ -78,7 +78,7 @@ export default function PromoHeroSlider({ ads = [] }) {
       id: `ad-${ad.id}`,
       adId: ad.id,
       isAd: true,
-      tag: ad.badgeText || (ad.sponsorName ? `✦ شريك رسمي • ${ad.sponsorName}` : "✦ إعلان ممول"),
+      tag: ad.sponsorName ? `✦ راعي رسمي • ${ad.sponsorName}` : "✦ شريك معتمد",
       title: ad.title,
       subtitle: ad.subtitle || ad.description || "عروض وخدمات مميزة لعملاء سودان زون بالتعاون مع شركائنا المعتمدين.",
       image: resolveImageUrl(ad.imageUrl),
@@ -100,7 +100,7 @@ export default function PromoHeroSlider({ ads = [] }) {
         isExternal: true,
       },
       ctaSecondary: { label: "تصفح المتجر", href: "/products" },
-      badgeText: ad.badgeText || "ممول",
+      badgeText: ad.badgeText || "عرض مميز",
       accentColor: "#f59e0b",
       adRaw: ad,
     }));
@@ -225,17 +225,21 @@ export default function PromoHeroSlider({ ads = [] }) {
 
             <div className="szHeroSlideContent">
               <div className="szHeroTopPills">
-                <span
-                  className="szHeroPillBadge"
-                  style={{
-                    borderColor: slide.accentColor,
-                    color: slide.accentColor,
-                    backgroundColor: slide.isAd ? "rgba(15, 23, 42, 0.75)" : undefined,
-                  }}
-                >
-                  {slide.tag}
-                </span>
-                <span className="szHeroDiscountPill">{slide.badgeText}</span>
+                {slide.tag && (
+                  <span
+                    className="szHeroPillBadge"
+                    style={{
+                      borderColor: slide.accentColor,
+                      color: slide.accentColor,
+                      backgroundColor: slide.isAd ? "rgba(15, 23, 42, 0.75)" : undefined,
+                    }}
+                  >
+                    {slide.tag}
+                  </span>
+                )}
+                {slide.badgeText && slide.badgeText !== slide.tag && (
+                  <span className="szHeroDiscountPill">{slide.badgeText}</span>
+                )}
               </div>
 
               <h1 className="szHeroMainHeading">{slide.title}</h1>

@@ -12423,3 +12423,31 @@ select {
     object-fit: cover;
   }
 }
+
+/* Enhanced Partner Banner Aspect Ratio & Visual Polish */
+.szPartnerBannerWrap {
+  height: auto !important;
+  aspect-ratio: 16 / 9;
+  min-height: 200px;
+  max-height: 440px;
+}
+@media (min-width: 768px) {
+  .szPartnerBannerWrap {
+    aspect-ratio: 16 / 7.5;
+    min-height: 300px;
+    max-height: 420px;
+  }
+}
+@media (min-width: 1024px) {
+  .szPartnerBannerWrap {
+    aspect-ratio: 16 / 6.5;
+    min-height: 360px;
+    max-height: 460px;
+  }
+}
+.szPartnerLogo, .szPartnerLogoPlaceholder {
+  width: 58px;
+  height: 58px;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
