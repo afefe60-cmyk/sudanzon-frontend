@@ -46,17 +46,21 @@ export default function PartnerSponsorStrip({ ads = [] }) {
 
   if (!feedAds.length) return null;
 
-  const getActionLabel = (actionType) => {
+  const getActionLabel = (ad) => {
+    const actionType = typeof ad === "string" ? ad : ad?.actionType || "WEBSITE_URL";
+    const textCorpus = typeof ad === "object" ? `${ad?.title || ""} ${ad?.subtitle || ""} ${ad?.description || ""}`.toLowerCase() : "";
+    const isRegister = textCorpus.includes("تدريب") || textCorpus.includes("معهد") || textCorpus.includes("مركز") || textCorpus.includes("خوارزمي") || textCorpus.includes("دورة") || textCorpus.includes("سجل");
+
     switch (actionType) {
       case "WHATSAPP":
-        return "💬 تواصل عبر واتساب";
+        return isRegister ? "💬 سجل واستفسر عبر واتساب" : "💬 تواصل عبر واتساب";
       case "PHONE_CALL":
         return "📞 اتصال هاتفي مباشر";
       case "APP_STORE":
         return "📲 تحميل التطبيق";
       case "WEBSITE_URL":
       default:
-        return "🌐 زيارة الموقع / العرض";
+        return isRegister ? "✍️ سجل الآن في البرامج" : "🌐 زيارة الموقع / العرض";
     }
   };
 
@@ -116,7 +120,7 @@ export default function PartnerSponsorStrip({ ads = [] }) {
                       onClick={() => trackAdClick(ad.id)}
                       className="szPartnerCtaBtn"
                     >
-                      <span>{getActionLabel(ad.actionType)}</span>
+                      <span>{getActionLabel(ad)}</span>
                       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5">
                         <path d="M19 12H5M12 19l-7-7 7-7" />
                       </svg>

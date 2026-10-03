@@ -84,14 +84,18 @@ export default function PromoHeroSlider({ ads = [] }) {
       image: resolveImageUrl(ad.imageUrl),
       sponsorLogo: ad.logoUrl || ad.sponsorLogo ? resolveImageUrl(ad.logoUrl || ad.sponsorLogo) : null,
       ctaPrimary: {
-        label:
-          ad.actionType === "WHATSAPP"
-            ? "💬 تواصل عبر واتساب"
-            : ad.actionType === "PHONE_CALL"
-            ? "📞 اتصال مباشر"
-            : ad.actionType === "APP_STORE"
-            ? "📲 تحميل التطبيق"
-            : "استكشف العرض الآن",
+        label: (() => {
+          const textCorpus = `${ad.title || ""} ${ad.subtitle || ""} ${ad.description || ""}`.toLowerCase();
+          const isRegister = textCorpus.includes("تدريب") || textCorpus.includes("معهد") || textCorpus.includes("مركز") || textCorpus.includes("خوارزمي") || textCorpus.includes("دورة") || textCorpus.includes("سجل");
+          if (ad.actionType === "WHATSAPP") {
+            return isRegister ? "💬 سجل واستفسر عبر واتساب" : "💬 تواصل عبر واتساب";
+          } else if (ad.actionType === "PHONE_CALL") {
+            return "📞 اتصال مباشر";
+          } else if (ad.actionType === "APP_STORE") {
+            return "📲 تحميل التطبيق";
+          }
+          return isRegister ? "✍️ سجل الآن في البرامج" : "استكشف العرض الآن";
+        })(),
         href: getAdActionHref(ad),
         isExternal: true,
       },
