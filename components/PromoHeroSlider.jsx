@@ -225,6 +225,11 @@ export default function PromoHeroSlider({ ads = [] }) {
 
             <div className="szHeroSlideContent">
               <div className="szHeroTopPills">
+                {slide.sponsorLogo && (
+                  <div className="szHeroSponsorLogoBadge" title={slide.tag || "الراعي"}>
+                    <img src={slide.sponsorLogo} alt="شعار الراعي" />
+                  </div>
+                )}
                 {slide.tag && (
                   <span
                     className="szHeroPillBadge"
