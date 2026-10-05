@@ -593,20 +593,6 @@ export default function AdminAdsClient() {
         </div>
       )}
 
-      {/* Ads Table / Cards */}
-      <div style={{ marginTop: "24px" }}>
-        {loading ? (
-          <div style={{ textAlign: "center", padding: "40px", color: "#94a3b8" }}>
-            ⏳ جاري تحميل الإعلانات...
-          </div>
-        ) : ads.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "40px", background: "rgba(30, 41, 59, 0.4)", borderRadius: "16px", border: "1px dashed #475569" }}>
-            <span style={{ fontSize: "2.5rem", display: "block", marginBottom: "8px" }}>📢</span>
-            <strong style={{ color: "#f8fafc", fontSize: "1.1rem" }}>لا توجد إعلانات مسجلة حتى الآن</strong>
-            <p style={{ color: "#94a3b8", fontSize: "0.85rem", marginTop: "4px" }}>
-              اضغط على "إضافة إعلان جديد" بالأعلى لترويج خدمات البنوك، المعاهد، أو الشركات.
-            </p>
-          </div>
       {/* Filter Tabs */}
       <div style={{ display: "flex", gap: "8px", margin: "24px 0 16px", borderBottom: "1px solid #334155", paddingBottom: "12px", flexWrap: "wrap", alignItems: "center" }}>
         <button
