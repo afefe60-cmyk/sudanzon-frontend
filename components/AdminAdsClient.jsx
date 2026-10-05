@@ -33,6 +33,7 @@ export default function AdminAdsClient() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [filterType, setFilterType] = useState("ALL"); // ALL, EXTERNAL, INTERNAL
   const imageInputRef = useRef(null);
   const logoInputRef = useRef(null);
 
@@ -48,6 +49,24 @@ export default function AdminAdsClient() {
       setErrorMessage("");
     } catch (error) {
       setErrorMessage(error.message || "تعذر تحميل قائمة الإعلانات");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSeedInternal = async () => {
+    setLoading(true);
+    setMessage("");
+    setErrorMessage("");
+    try {
+      const result = await apiJson("/api/admin/ads/seed-internal", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      setMessage(result.message || "تم إدراج بنرات عروض المنصة الداخلية بنجاح");
+      loadAds();
+    } catch (err) {
+      setErrorMessage(err.message || "تعذر إدراج بنرات المنصة");
     } finally {
       setLoading(false);
     }
@@ -217,6 +236,10 @@ export default function AdminAdsClient() {
         return "🌐 رابط موقع خارجي";
       case "APP_STORE":
         return "📲 متجر التطبيقات";
+      case "INTERNAL_PRODUCT":
+        return "🛒 منتج أو عروض داخلية";
+      case "INTERNAL_VENDOR":
+        return "🏪 متجر بائع داخلي";
       default:
         return a;
     }
@@ -230,24 +253,43 @@ export default function AdminAdsClient() {
             📢 إدارة الإعلانات والشركاء والرعاة
           </h2>
           <p style={{ color: "#94a3b8", fontSize: "0.88rem", margin: 0 }}>
-            إدارة إعلانات البنوك، المعاهد التدريبية، الشركات، والتطبيقات الخارجية مع التحكم في مدة الظهور وطرق التواصل.
+            إدارة إعلانات البنوك، الشركات، المعاهد التدريبية، وعروض المنصة الداخلية مع التحكم الكامل في مدة الظهور وطرق التواصل.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            if (showAddForm) {
-              setForm(emptyForm);
-              setShowAddForm(false);
-            } else {
-              setForm(emptyForm);
-              setShowAddForm(true);
-            }
-          }}
-          className="szAdminBtnPrimary"
-        >
-          {showAddForm ? "✕ إغلاق النموذج" : "➕ إضافة إعلان جديد"}
-        </button>
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+          <button
+            type="button"
+            onClick={handleSeedInternal}
+            className="szAdminBtnSecondary"
+            style={{
+              background: "#1e293b",
+              color: "#38bdf8",
+              border: "1.5px solid #0284c7",
+              fontWeight: 700,
+              padding: "10px 16px",
+              borderRadius: "10px",
+              cursor: "pointer",
+            }}
+            title="إدراج/استعادة بنرات عروض المنصة الثلاثة (مهرجان التوفير، التكنولوجيا، العطور) في قاعدة البيانات للتحكم بها"
+          >
+            📥 إدراج/استعادة بنرات المنصة الداخلية
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (showAddForm) {
+                setForm(emptyForm);
+                setShowAddForm(false);
+              } else {
+                setForm(emptyForm);
+                setShowAddForm(true);
+              }
+            }}
+            className="szAdminBtnPrimary"
+          >
+            {showAddForm ? "✕ إغلاق النموذج" : "➕ إضافة إعلان جديد"}
+          </button>
+        </div>
       </div>
 
       {message && (
@@ -310,8 +352,10 @@ export default function AdminAdsClient() {
                 <select name="actionType" value={form.actionType} onChange={onChange} className="szFormSelect">
                   <option value="WHATSAPP">💬 محادثة واتساب مباشرة (WhatsApp Direct)</option>
                   <option value="PHONE_CALL">📞 اتصال هاتفي مباشر (Direct Phone Call)</option>
-                  <option value="WEBSITE_URL">🌐 رابط موقع / صفحة تسجيل (Website Link)</option>
+                  <option value="WEBSITE_URL">🌐 رابط موقع / جهة خارجية (Website Link)</option>
                   <option value="APP_STORE">📲 تحميل تطبيق (Google Play Link)</option>
+                  <option value="INTERNAL_PRODUCT">🛒 منتج / قسم / عروض المنصة (Internal Offer)</option>
+                  <option value="INTERNAL_VENDOR">🏪 متجر بائع معتمد (Internal Store)</option>
                 </select>
               </div>
             </div>
@@ -389,6 +433,42 @@ export default function AdminAdsClient() {
                     required
                     className="szFormInput"
                   />
+                </div>
+              )}
+
+              {form.actionType === "INTERNAL_PRODUCT" && (
+                <div>
+                  <label className="szFormLabel">مسار أو رابط المنتج / العرض الداخلي *</label>
+                  <input
+                    type="text"
+                    name="actionUrl"
+                    value={form.actionUrl}
+                    onChange={onChange}
+                    placeholder="مثال: /products?q=عروض أو /products?category=إلكترونيات أو معرف المنتج"
+                    required
+                    className="szFormInput"
+                  />
+                  <small style={{ color: "#94a3b8", display: "block", marginTop: "4px" }}>
+                    يفتح صفحة العروض أو صفحة المنتج مباشرة داخل المتجر.
+                  </small>
+                </div>
+              )}
+
+              {form.actionType === "INTERNAL_VENDOR" && (
+                <div>
+                  <label className="szFormLabel">مسار أو رابط متجر البائع الداخلي *</label>
+                  <input
+                    type="text"
+                    name="actionUrl"
+                    value={form.actionUrl}
+                    onChange={onChange}
+                    placeholder="مثال: /stores/اسم-المتجر أو اسم متجر البائع"
+                    required
+                    className="szFormInput"
+                  />
+                  <small style={{ color: "#94a3b8", display: "block", marginTop: "4px" }}>
+                    ينقل العميل مباشرة لصفحة متجر التاجر المعتمد.
+                  </small>
                 </div>
               )}
             </div>
@@ -527,19 +607,93 @@ export default function AdminAdsClient() {
               اضغط على "إضافة إعلان جديد" بالأعلى لترويج خدمات البنوك، المعاهد، أو الشركات.
             </p>
           </div>
+      {/* Filter Tabs */}
+      <div style={{ display: "flex", gap: "8px", margin: "24px 0 16px", borderBottom: "1px solid #334155", paddingBottom: "12px", flexWrap: "wrap", alignItems: "center" }}>
+        <button
+          type="button"
+          onClick={() => setFilterType("ALL")}
+          style={{
+            padding: "8px 16px",
+            borderRadius: "8px",
+            border: "none",
+            cursor: "pointer",
+            fontWeight: 700,
+            fontSize: "0.88rem",
+            background: filterType === "ALL" ? "#3b82f6" : "#1e293b",
+            color: filterType === "ALL" ? "#fff" : "#94a3b8",
+          }}
+        >
+          الكل ({ads.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilterType("EXTERNAL")}
+          style={{
+            padding: "8px 16px",
+            borderRadius: "8px",
+            border: "none",
+            cursor: "pointer",
+            fontWeight: 700,
+            fontSize: "0.88rem",
+            background: filterType === "EXTERNAL" ? "#3b82f6" : "#1e293b",
+            color: filterType === "EXTERNAL" ? "#fff" : "#94a3b8",
+          }}
+        >
+          ⭐ إعلانات الرعاة والشركاء ({ads.filter(a => a.actionType !== "INTERNAL_PRODUCT" && a.actionType !== "INTERNAL_VENDOR" && !a.id?.startsWith("default-banner-")).length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilterType("INTERNAL")}
+          style={{
+            padding: "8px 16px",
+            borderRadius: "8px",
+            border: "none",
+            cursor: "pointer",
+            fontWeight: 700,
+            fontSize: "0.88rem",
+            background: filterType === "INTERNAL" ? "#10b981" : "#1e293b",
+            color: filterType === "INTERNAL" ? "#fff" : "#94a3b8",
+          }}
+        >
+          🏠 عروض وبنرات المنصة الداخلية ({ads.filter(a => a.actionType === "INTERNAL_PRODUCT" || a.actionType === "INTERNAL_VENDOR" || a.id?.startsWith("default-banner-")).length})
+        </button>
+      </div>
+
+      {/* Ads Table / Cards */}
+      <div style={{ marginTop: "16px" }}>
+        {loading ? (
+          <div style={{ textAlign: "center", padding: "40px", color: "#94a3b8" }}>
+            ⏳ جاري تحميل الإعلانات...
+          </div>
+        ) : ads.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "40px", background: "rgba(30, 41, 59, 0.4)", borderRadius: "16px", border: "1px dashed #475569" }}>
+            <span style={{ fontSize: "2.5rem", display: "block", marginBottom: "8px" }}>📢</span>
+            <strong style={{ color: "#f8fafc", fontSize: "1.1rem" }}>لا توجد إعلانات مسجلة حتى الآن</strong>
+            <p style={{ color: "#94a3b8", fontSize: "0.85rem", marginTop: "4px" }}>
+              اضغط على "إضافة إعلان جديد" أو زر "إدراج بنرات المنصة الداخلية" لإظهار العروض.
+            </p>
+          </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "20px" }}>
-            {ads.map((ad) => {
+            {ads
+              .filter((ad) => {
+                const isInternal = ad.actionType === "INTERNAL_PRODUCT" || ad.actionType === "INTERNAL_VENDOR" || ad.id?.startsWith("default-banner-");
+                if (filterType === "INTERNAL") return isInternal;
+                if (filterType === "EXTERNAL") return !isInternal;
+                return true;
+              })
+              .map((ad) => {
               const now = new Date();
               const isExpired = ad.endDate && new Date(ad.endDate) < now;
               const isFuture = ad.startDate && new Date(ad.startDate) > now;
+              const isInternal = ad.actionType === "INTERNAL_PRODUCT" || ad.actionType === "INTERNAL_VENDOR" || ad.id?.startsWith("default-banner-");
 
               return (
                 <div
                   key={ad.id}
                   style={{
                     background: "#0f172a",
-                    border: `1px solid ${ad.isActive && !isExpired ? "#3b82f6" : "#334155"}`,
+                    border: `1px solid ${ad.isActive && !isExpired ? (isInternal ? "#10b981" : "#3b82f6") : "#334155"}`,
                     borderRadius: "16px",
                     overflow: "hidden",
                     display: "flex",
@@ -556,6 +710,9 @@ export default function AdminAdsClient() {
                     />
                     <div style={{ position: "absolute", top: "10px", right: "10px", background: "rgba(15, 23, 42, 0.85)", backdropFilter: "blur(4px)", padding: "4px 8px", borderRadius: "6px", fontSize: "0.75rem", color: "#fbbf24", fontWeight: "bold" }}>
                       {ad.badgeText || "إعلان ممول"}
+                    </div>
+                    <div style={{ position: "absolute", top: "10px", left: "10px", background: isInternal ? "rgba(5, 150, 105, 0.9)" : "rgba(37, 99, 235, 0.9)", backdropFilter: "blur(4px)", padding: "3px 8px", borderRadius: "6px", fontSize: "0.72rem", color: "#ffffff", fontWeight: "bold" }}>
+                      {isInternal ? "🏠 إعلان داخلي" : "⭐ شريك معتمد"}
                     </div>
                     <div style={{ position: "absolute", bottom: "10px", right: "10px", background: ad.isActive && !isExpired ? "#10b981" : "#ef4444", color: "#ffffff", padding: "2px 8px", borderRadius: "4px", fontSize: "0.7rem", fontWeight: "bold" }}>
                       {!ad.isActive ? "⏸️ معطل" : isExpired ? "⌛ منتهي" : isFuture ? "🕒 مجدول" : "🟢 نشط الآن"}
@@ -576,7 +733,7 @@ export default function AdminAdsClient() {
                         <h4 style={{ margin: 0, fontSize: "1.05rem", fontWeight: "800", color: "#f8fafc" }}>
                           {ad.title}
                         </h4>
-                        <span style={{ fontSize: "0.78rem", color: "#38bdf8" }}>
+                        <span style={{ fontSize: "0.78rem", color: isInternal ? "#34d399" : "#38bdf8" }}>
                           {getPlacementLabel(ad.placement)}
                         </span>
                       </div>
@@ -657,6 +814,17 @@ export default function AdminAdsClient() {
             })}
           </div>
         )}
+      </div>
+
+      {/* Side Deals Explanatory Card */}
+      <div style={{ marginTop: "32px", background: "rgba(30, 41, 59, 0.5)", border: "1px solid #334155", borderRadius: "14px", padding: "18px 22px" }}>
+        <h4 style={{ fontSize: "1rem", fontWeight: "700", color: "#fbbf24", margin: "0 0 8px", display: "flex", alignItems: "center", gap: "8px" }}>
+          💡 ملاحظة بخصوص بطاقات العروض الجانبية (بجانب السلايدر):
+        </h4>
+        <p style={{ color: "#cbd5e1", fontSize: "0.88rem", lineHeight: 1.6, margin: 0 }}>
+          البطاقتان الجانبيتان المعروضتان بجانب السلايدر الرئيسي (<strong>«صفقة اليوم السريعة 🔥»</strong> و <strong>«العرض الخاص ⭐»</strong>) ترتبطان مباشرة بالمنتجات.
+          يمكنك تغيير أي منهما فوراً بالذهاب إلى تبويب <strong>«المنتجات»</strong> في لوحة الإدارة والضغط على زر <strong>«صفقة اليوم»</strong> أو <strong>«عرض خاص»</strong> بجانب المنتج المطلوب ليتم تثبيته في الصفحة الرئيسية فوراً.
+        </p>
       </div>
 
       <style jsx>{`

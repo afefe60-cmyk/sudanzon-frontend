@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { apiJson } from "../lib/api";
 import { getProductImage, resolveImageUrl } from "../lib/media";
-import { getAdActionHref, trackAdClick, trackAdView } from "../lib/ads";
+import { getAdActionHref, getAdCtaLabel, trackAdClick, trackAdView } from "../lib/ads";
 
 const defaultSlides = [
   {
@@ -74,38 +74,53 @@ export default function PromoHeroSlider({ ads = [] }) {
   // Format ad banners into slides
   const adSlides = (liveAds || [])
     .filter((ad) => ad.placement === "HOME_TOP_SLIDER" && ad.isActive)
-    .map((ad) => ({
-      id: `ad-${ad.id}`,
-      adId: ad.id,
-      isAd: true,
-      tag: ad.sponsorName ? `✦ راعي رسمي • ${ad.sponsorName}` : "✦ شريك معتمد",
-      title: ad.title,
-      subtitle: ad.subtitle || ad.description || "عروض وخدمات مميزة لعملاء سودان زون بالتعاون مع شركائنا المعتمدين.",
-      image: resolveImageUrl(ad.imageUrl),
-      sponsorLogo: ad.logoUrl || ad.sponsorLogo ? resolveImageUrl(ad.logoUrl || ad.sponsorLogo) : null,
-      ctaPrimary: {
-        label: (() => {
-          const textCorpus = `${ad.title || ""} ${ad.subtitle || ""} ${ad.description || ""}`.toLowerCase();
-          const isRegister = textCorpus.includes("تدريب") || textCorpus.includes("معهد") || textCorpus.includes("مركز") || textCorpus.includes("خوارزمي") || textCorpus.includes("دورة") || textCorpus.includes("سجل");
-          if (ad.actionType === "WHATSAPP") {
-            return isRegister ? "💬 سجل واستفسر عبر واتساب" : "💬 تواصل عبر واتساب";
-          } else if (ad.actionType === "PHONE_CALL") {
-            return "📞 اتصال مباشر";
-          } else if (ad.actionType === "APP_STORE") {
-            return "📲 تحميل التطبيق";
-          }
-          return isRegister ? "✍️ سجل الآن في البرامج" : "استكشف العرض الآن";
-        })(),
-        href: getAdActionHref(ad),
-        isExternal: true,
-      },
-      ctaSecondary: { label: "تصفح المتجر", href: "/products" },
-      badgeText: ad.badgeText || "عرض مميز",
-      accentColor: "#f59e0b",
-      adRaw: ad,
-    }));
+    .map((ad) => {
+      const isInternal = ad.actionType === "INTERNAL_PRODUCT" || ad.actionType === "INTERNAL_VENDOR";
+      const isExternal = !isInternal;
 
-  const allSlides = adSlides.length > 0 ? [...adSlides, ...defaultSlides] : defaultSlides;
+      // Secondary button logic:
+      // NEVER show "تصفح المتجر" for external companies!
+      // Only show secondary button if it's an internal platform promo pointing to products or vendor store.
+      let ctaSecondary = null;
+      if (isInternal) {
+        ctaSecondary = {
+          label: ad.actionType === "INTERNAL_VENDOR" ? "تصفح المتجر" : "وصل حديثاً ✨",
+          href: ad.actionType === "INTERNAL_VENDOR" ? getAdActionHref(ad) : "/products?sort=new",
+        };
+      }
+
+      return {
+        id: `ad-${ad.id}`,
+        adId: ad.id,
+        isAd: isExternal,
+        tag: ad.sponsorName
+          ? `✦ راعي رسمي • ${ad.sponsorName}`
+          : isInternal
+          ? ad.badgeText || "✦ عروض سودان زون"
+          : "✦ شريك معتمد",
+        title: ad.title,
+        subtitle:
+          ad.subtitle ||
+          ad.description ||
+          "عروض وخدمات مميزة لعملاء سودان زون بالتعاون مع شركائنا المعتمدين.",
+        image: resolveImageUrl(ad.imageUrl),
+        sponsorLogo:
+          ad.logoUrl || ad.sponsorLogo ? resolveImageUrl(ad.logoUrl || ad.sponsorLogo) : null,
+        ctaPrimary: {
+          label: getAdCtaLabel(ad),
+          href: getAdActionHref(ad),
+          isExternal: isExternal,
+        },
+        ctaSecondary,
+        badgeText: ad.badgeText || (isInternal ? "عرض خاص" : "شريك معتمد"),
+        accentColor: isInternal ? "#10b981" : "#f59e0b",
+        adRaw: ad,
+      };
+    });
+
+  // If live ads/banners exist in the database, prioritize them!
+  // Fall back to defaultSlides ONLY if there are no top slider banners configured at all.
+  const allSlides = adSlides.length > 0 ? adSlides : defaultSlides;
 
   useEffect(() => {
     let isMounted = true;
@@ -273,9 +288,11 @@ export default function PromoHeroSlider({ ads = [] }) {
                   </Link>
                 )}
 
-                <Link className="szHeroCtaSecondary" href={slide.ctaSecondary.href}>
-                  {slide.ctaSecondary.label}
-                </Link>
+                {slide.ctaSecondary && (
+                  <Link className="szHeroCtaSecondary" href={slide.ctaSecondary.href}>
+                    {slide.ctaSecondary.label}
+                  </Link>
+                )}
               </div>
 
               {/* Quick Perks Bar */}

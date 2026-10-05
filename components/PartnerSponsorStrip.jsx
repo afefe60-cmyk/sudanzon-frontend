@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { resolveImageUrl } from "../lib/media";
-import { getAdActionHref, trackAdClick, trackAdView } from "../lib/ads";
+import { getAdActionHref, getAdCtaLabel, trackAdClick, trackAdView } from "../lib/ads";
 import { apiJson } from "../lib/api";
 
 export default function PartnerSponsorStrip({ ads = [] }) {
@@ -46,23 +46,7 @@ export default function PartnerSponsorStrip({ ads = [] }) {
 
   if (!feedAds.length) return null;
 
-  const getActionLabel = (ad) => {
-    const actionType = typeof ad === "string" ? ad : ad?.actionType || "WEBSITE_URL";
-    const textCorpus = typeof ad === "object" ? `${ad?.title || ""} ${ad?.subtitle || ""} ${ad?.description || ""}`.toLowerCase() : "";
-    const isRegister = textCorpus.includes("تدريب") || textCorpus.includes("معهد") || textCorpus.includes("مركز") || textCorpus.includes("خوارزمي") || textCorpus.includes("دورة") || textCorpus.includes("سجل");
-
-    switch (actionType) {
-      case "WHATSAPP":
-        return isRegister ? "💬 سجل واستفسر عبر واتساب" : "💬 تواصل عبر واتساب";
-      case "PHONE_CALL":
-        return "📞 اتصال هاتفي مباشر";
-      case "APP_STORE":
-        return "📲 تحميل التطبيق";
-      case "WEBSITE_URL":
-      default:
-        return isRegister ? "✍️ سجل الآن في البرامج" : "🌐 زيارة الموقع / العرض";
-    }
-  };
+  const getActionLabel = (ad) => getAdCtaLabel(ad);
 
   return (
     <section className="szPartnerSponsorSection" ref={containerRef}>
