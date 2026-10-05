@@ -43,20 +43,20 @@ export default function CustomerRegisterPage({ searchParams }) {
               <GoogleAuthButton returnTo={searchParams?.returnTo || "/"} label="التسجيل عبر Google" />
 
               <div className="authDivider">
-                <span>أو أكمل بالبريد أو الهاتف</span>
+                <span>أو التسجيل المباشر برقم الهاتف</span>
               </div>
 
               <AuthForm
                 title="إنشاء حساب عميل"
-                subtitle="استخدم الاسم مع بريد إلكتروني أو هاتف وكلمة مرور، ثم سيُحفظ الدخول تلقائيًا."
+                subtitle="أدخل اسمك ورقم هاتفك وكلمة المرور لتأكيد حسابك واستلام شحناتك بسهولة."
                 endpoint="/api/auth/register/customer"
                 submitLabel="إنشاء الحساب"
                 returnTo={searchParams?.returnTo || "/"}
                 fields={[
-                  { name: "name", placeholder: "الاسم الكامل" },
-                  { name: "phone", placeholder: "رقم الهاتف", required: false },
-                  { name: "email", placeholder: "البريد الإلكتروني", required: false },
-                  { name: "password", placeholder: "كلمة المرور", type: "password" },
+                  { name: "name", placeholder: "الاسم الكامل", required: true },
+                  { name: "phone", placeholder: "رقم الهاتف والواتساب للتوصيل (إلزامي)", required: true, type: "tel" },
+                  { name: "email", placeholder: "البريد الإلكتروني (اختياري)", required: false, type: "email" },
+                  { name: "password", placeholder: "كلمة المرور", type: "password", required: true },
                 ]}
               />
             </div>
