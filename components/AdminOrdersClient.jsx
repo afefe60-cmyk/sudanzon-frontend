@@ -67,6 +67,12 @@ export default function AdminOrdersClient() {
         !search ||
         String(o.id).toLowerCase().includes(search.toLowerCase()) ||
         (o.customer?.name && o.customer.name.toLowerCase().includes(search.toLowerCase())) ||
+        (o.recipientName && o.recipientName.toLowerCase().includes(search.toLowerCase())) ||
+        (o.shipment?.recipientName && o.shipment.recipientName.toLowerCase().includes(search.toLowerCase())) ||
+        (o.recipientPhone && o.recipientPhone.includes(search)) ||
+        (o.shipment?.recipientPhone && o.shipment.recipientPhone.includes(search)) ||
+        (o.customer?.phone && o.customer.phone.includes(search)) ||
+        (o.shipment?.city && o.shipment.city.toLowerCase().includes(search.toLowerCase())) ||
         (o.city && o.city.toLowerCase().includes(search.toLowerCase()));
       return matchesStatus && matchesSearch;
     });
@@ -83,7 +89,7 @@ export default function AdminOrdersClient() {
           </svg>
           <input
             type="text"
-            placeholder="بحث برقم الطلب، اسم العميل، أو المدينة..."
+            placeholder="بحث برقم الطلب، اسم العميل، الهاتف أو المدينة..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -126,7 +132,7 @@ export default function AdminOrdersClient() {
               <thead>
                 <tr>
                   <th>رقم الطلب</th>
-                  <th>العميل والتواصل</th>
+                  <th>صاحب الطلب والتواصل</th>
                   <th>المدينة والعنوان</th>
                   <th>عدد القطع</th>
                   <th>الإجمالي</th>
@@ -142,22 +148,75 @@ export default function AdminOrdersClient() {
                     text: "#334155",
                   };
                   const itemsCount = (order.items || []).reduce((sum, it) => sum + Number(it.quantity || 1), 0);
+                  const customerName = order.shipment?.recipientName || order.recipientName || order.customer?.name || "عميل مسجل";
+                  const phone = order.shipment?.recipientPhone || order.recipientPhone || order.customer?.phone || "";
+                  const cleanPhone = phone ? phone.replace(/[^0-9]/g, "") : "";
+                  const waPhone = cleanPhone.startsWith("0") ? `249${cleanPhone.slice(1)}` : cleanPhone;
 
                   return (
                     <tr key={order.id}>
                       <td>
-                        <strong className="szOrderId">#{order.id.slice(0, 8)}</strong>
+                        <a
+                          href={`/orders/${order.id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="szOrderId"
+                          title="عرض تفاصيل الطلب بالكامل"
+                          style={{ color: "#0284c7", textDecoration: "underline" }}
+                        >
+                          #{order.id.slice(0, 8)}
+                        </a>
                       </td>
                       <td>
                         <div className="szCustomerCell">
-                          <strong>{order.customer?.name || "عميل مسجل"}</strong>
-                          <small>{order.customer?.phone || order.customer?.email || "بدون هاتف"}</small>
+                          <strong style={{ display: "block", color: "#0f172a" }}>👤 {customerName}</strong>
+                          {phone ? (
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "4px" }}>
+                              <span dir="ltr" style={{ fontSize: "0.82rem", fontWeight: "600", color: "#334155" }}>{phone}</span>
+                              <a
+                                href={`tel:${phone}`}
+                                title="اتصال هاتفي"
+                                style={{
+                                  textDecoration: "none",
+                                  padding: "2px 6px",
+                                  background: "#e0f2fe",
+                                  color: "#0369a1",
+                                  borderRadius: "4px",
+                                  fontSize: "0.72rem",
+                                  fontWeight: "700",
+                                }}
+                              >
+                                📞
+                              </a>
+                              <a
+                                href={`https://wa.me/${waPhone}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                title="تواصل واتساب"
+                                style={{
+                                  textDecoration: "none",
+                                  padding: "2px 6px",
+                                  background: "#dcfce7",
+                                  color: "#15803d",
+                                  borderRadius: "4px",
+                                  fontSize: "0.72rem",
+                                  fontWeight: "700",
+                                }}
+                              >
+                                💬
+                              </a>
+                            </div>
+                          ) : (
+                            <small style={{ color: "#94a3b8" }}>{order.customer?.email || "بدون هاتف"}</small>
+                          )}
                         </div>
                       </td>
                       <td>
                         <div className="szAddressCell">
-                          <span className="szCityTag">📍 {order.city || "الخرطوم"}</span>
-                          <small>{order.address || "العنوان الأساسي"}</small>
+                          <span className="szCityTag">📍 {order.shipment?.city || order.city || "الخرطوم"}</span>
+                          <small style={{ display: "block", marginTop: "2px", color: "#475569" }}>
+                            {order.shipment?.address || order.address || "العنوان الأساسي"}
+                          </small>
                         </div>
                       </td>
                       <td>

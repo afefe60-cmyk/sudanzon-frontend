@@ -295,17 +295,94 @@ export default function OrderDetailPage() {
 
                 {/* Shipping & Financial Breakdown */}
                 <div className="szOrderAsideStack">
+                  {/* Customer Details & Contact Card */}
+                  <div className="szDeliveryAddressCard">
+                    <h3 className="szAsideCardTitle">👤 صاحب الطلب والتواصل</h3>
+                    <div className="szAddressInfoList">
+                      <div className="szAddressInfoRow">
+                        <span className="szInfoLabel">الاسم:</span>
+                        <strong className="szInfoVal">
+                          {order.shipment?.recipientName || order.recipientName || order.customer?.name || "عميل مسجل"}
+                        </strong>
+                      </div>
+
+                      <div className="szAddressInfoRow">
+                        <span className="szInfoLabel">رقم الهاتف:</span>
+                        {(() => {
+                          const phone = order.shipment?.recipientPhone || order.recipientPhone || order.customer?.phone;
+                          if (!phone) {
+                            return <strong className="szInfoVal" style={{ color: "#94a3b8" }}>مسجل لدى المندوب</strong>;
+                          }
+                          const cleanPhone = phone.replace(/[^0-9]/g, "");
+                          const waPhone = cleanPhone.startsWith("0") ? `249${cleanPhone.slice(1)}` : cleanPhone;
+                          return (
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                              <strong className="szInfoVal" dir="ltr">{phone}</strong>
+                              <a
+                                href={`tel:${phone}`}
+                                title="اتصال هاتفي مباشر"
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "3px",
+                                  padding: "3px 8px",
+                                  borderRadius: "6px",
+                                  background: "#0284c7",
+                                  color: "#fff",
+                                  fontSize: "0.75rem",
+                                  textDecoration: "none",
+                                  fontWeight: "700",
+                                }}
+                              >
+                                📞 اتصال
+                              </a>
+                              <a
+                                href={`https://wa.me/${waPhone}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                title="مراسلة عبر واتساب"
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "3px",
+                                  padding: "3px 8px",
+                                  borderRadius: "6px",
+                                  background: "#25D366",
+                                  color: "#fff",
+                                  fontSize: "0.75rem",
+                                  textDecoration: "none",
+                                  fontWeight: "700",
+                                }}
+                              >
+                                💬 واتساب
+                              </a>
+                            </div>
+                          );
+                        })()}
+                      </div>
+
+                      {order.customer?.email && (
+                        <div className="szAddressInfoRow">
+                          <span className="szInfoLabel">البريد:</span>
+                          <span className="szInfoVal" style={{ fontSize: "0.85rem", color: "#64748b", wordBreak: "break-all" }}>
+                            {order.customer.email}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   {/* Delivery Address Card */}
                   <div className="szDeliveryAddressCard">
                     <h3 className="szAsideCardTitle">📍 عنوان التوصيل والشحن</h3>
                     <div className="szAddressInfoList">
                       <div className="szAddressInfoRow">
                         <span className="szInfoLabel">المدينة / الولاية:</span>
-                        <strong className="szInfoVal">🇸🇩 {order.city || "الخرطوم"}</strong>
+                        <strong className="szInfoVal">🇸🇩 {order.shipment?.city || order.city || "الخرطوم"}</strong>
                       </div>
                       <div className="szAddressInfoRow">
                         <span className="szInfoLabel">العنوان بالتفصيل:</span>
-                        <strong className="szInfoVal">{order.address || "العنوان الأساسي للعميل"}</strong>
+                        <strong className="szInfoVal">{order.shipment?.address || order.address || "العنوان الأساسي للعميل"}</strong>
                       </div>
                       {order.note && (
                         <div className="szAddressInfoRow">
@@ -313,10 +390,6 @@ export default function OrderDetailPage() {
                           <p className="szDeliveryNote">{order.note}</p>
                         </div>
                       )}
-                      <div className="szAddressInfoRow">
-                        <span className="szInfoLabel">رقم هاتف المستلم:</span>
-                        <strong className="szInfoVal">{order.customer?.phone || "مسجل لدى المندوب"}</strong>
-                      </div>
                     </div>
                   </div>
 

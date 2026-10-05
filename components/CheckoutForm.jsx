@@ -49,6 +49,8 @@ export default function CheckoutForm({ items = [] }) {
   const router = useRouter();
   const [city, setCity] = useState("الخرطوم");
   const [address, setAddress] = useState("");
+  const [recipientName, setRecipientName] = useState("");
+  const [recipientPhone, setRecipientPhone] = useState("");
   const [locLoading, setLocLoading] = useState(false);
   const [note, setNote] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("CASH_ON_DELIVERY");
@@ -79,6 +81,8 @@ export default function CheckoutForm({ items = [] }) {
         setCurrentUser(user);
         if (user.city) setCity(user.city);
         if (user.shippingAddress) setAddress(user.shippingAddress);
+        if (user.name) setRecipientName(user.name);
+        if (user.phone) setRecipientPhone(user.phone);
       }
     } catch {
       // keep defaults
@@ -93,6 +97,8 @@ export default function CheckoutForm({ items = [] }) {
             setCurrentUser(result.user);
             if (result.user.city) setCity(result.user.city);
             if (result.user.shippingAddress) setAddress(result.user.shippingAddress);
+            if (result.user.name) setRecipientName(result.user.name);
+            if (result.user.phone) setRecipientPhone(result.user.phone);
           }
         })
         .catch(() => {
@@ -114,6 +120,11 @@ export default function CheckoutForm({ items = [] }) {
       return;
     }
 
+    if (!recipientPhone.trim()) {
+      setMessage("يرجى إدخال رقم هاتف المستلم للتواصل مع مندوب التوصيل");
+      return;
+    }
+
     if (!address.trim()) {
       setMessage("يرجى كتابة عنوان التوصيل بالتفصيل (الحي، الشارع، المعلم البارز)");
       return;
@@ -130,6 +141,8 @@ export default function CheckoutForm({ items = [] }) {
           items,
           city,
           address,
+          recipientName: recipientName.trim(),
+          recipientPhone: recipientPhone.trim(),
           note: `${note ? note + " | " : ""}طريقة الدفع: ${paymentMethod}`,
         }),
       });
@@ -168,6 +181,38 @@ export default function CheckoutForm({ items = [] }) {
           </div>
         </div>
       )}
+
+      {/* Recipient Details */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "12px", marginBottom: "4px" }}>
+        <div className="szFormField">
+          <label className="szFormLabel" htmlFor="checkout-name">
+            👤 اسم المستلم / صاحب الطلب:
+          </label>
+          <input
+            id="checkout-name"
+            type="text"
+            className="szFormInput"
+            placeholder="الاسم الثلاثي أو الثنائي"
+            value={recipientName}
+            onChange={(e) => setRecipientName(e.target.value)}
+          />
+        </div>
+        <div className="szFormField">
+          <label className="szFormLabel" htmlFor="checkout-phone">
+            📞 رقم الهاتف للتواصل والواتساب: <span style={{ color: "#ef4444" }}>*</span>
+          </label>
+          <input
+            id="checkout-phone"
+            type="tel"
+            className="szFormInput"
+            placeholder="مثال: 0912345678 أو 0123456789"
+            dir="ltr"
+            value={recipientPhone}
+            onChange={(e) => setRecipientPhone(e.target.value)}
+            required
+          />
+        </div>
+      </div>
 
       {/* City Selector */}
       <div className="szFormField">
