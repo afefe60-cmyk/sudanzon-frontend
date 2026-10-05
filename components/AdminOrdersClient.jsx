@@ -5,10 +5,21 @@ import { apiJson } from "../lib/api";
 
 const statusColors = {
   PENDING: { label: "جديد (قيد المراجعة)", bg: "#fef3c7", text: "#92400e" },
+  NEW: { label: "جديد (قيد المراجعة)", bg: "#fef3c7", text: "#92400e" },
+  "جديد": { label: "جديد (قيد المراجعة)", bg: "#fef3c7", text: "#92400e" },
   PROCESSING: { label: "قيد التجهيز", bg: "#e0f2fe", text: "#075985" },
+  "قيد المعالجة": { label: "قيد التجهيز", bg: "#e0f2fe", text: "#075985" },
+  "قيد التجهيز": { label: "قيد التجهيز", bg: "#e0f2fe", text: "#075985" },
   SHIPPED: { label: "خرج مع المندوب", bg: "#f3e8ff", text: "#6b21a8" },
+  "تم الشحن": { label: "خرج مع المندوب", bg: "#f3e8ff", text: "#6b21a8" },
+  "خرج مع المندوب": { label: "خرج مع المندوب", bg: "#f3e8ff", text: "#6b21a8" },
+  "وصل للمندوب": { label: "خرج مع المندوب", bg: "#f3e8ff", text: "#6b21a8" },
+  OUT_FOR_DELIVERY: { label: "خرج مع المندوب", bg: "#f3e8ff", text: "#6b21a8" },
   DELIVERED: { label: "تم التسليم بنجاح ✓", bg: "#ecfdf5", text: "#065f46" },
+  "تم التسليم": { label: "تم التسليم بنجاح ✓", bg: "#ecfdf5", text: "#065f46" },
   CANCELLED: { label: "ملغي ✕", bg: "#fef2f2", text: "#991b1b" },
+  CANCELED: { label: "ملغي ✕", bg: "#fef2f2", text: "#991b1b" },
+  "ملغي": { label: "ملغي ✕", bg: "#fef2f2", text: "#991b1b" },
 };
 
 export default function AdminOrdersClient() {

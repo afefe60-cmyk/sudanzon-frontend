@@ -35,12 +35,53 @@ const timelineSteps = [
 ];
 
 const statusStepIndices = {
+  // Database Enums & Aliases
+  NEW: 0,
   PENDING: 0,
   PROCESSING: 1,
   SHIPPED: 2,
+  OUT_FOR_DELIVERY: 2,
   DELIVERED: 3,
+  CANCELED: -1,
   CANCELLED: -1,
+
+  // Arabic strings
+  "جديد": 0,
+  "قيد المعالجة": 1,
+  "قيد التجهيز": 1,
+  "قيد التجهيز والتغليف": 1,
+  "تم الشحن": 2,
+  "خرج مع المندوب": 2,
+  "وصل للمندوب": 2,
+  "في الطريق": 2,
+  "تم التسليم": 3,
+  "تم التسليم بنجاح": 3,
+  "ملغي": -1,
 };
+
+function toStandardStatus(status) {
+  const map = {
+    NEW: "NEW",
+    PENDING: "NEW",
+    "جديد": "NEW",
+    PROCESSING: "PROCESSING",
+    "قيد المعالجة": "PROCESSING",
+    "قيد التجهيز": "PROCESSING",
+    "قيد التجهيز والتغليف": "PROCESSING",
+    SHIPPED: "SHIPPED",
+    OUT_FOR_DELIVERY: "SHIPPED",
+    "تم الشحن": "SHIPPED",
+    "خرج مع المندوب": "SHIPPED",
+    "وصل للمندوب": "SHIPPED",
+    DELIVERED: "DELIVERED",
+    "تم التسليم": "DELIVERED",
+    "تم التسليم بنجاح": "DELIVERED",
+    CANCELED: "CANCELED",
+    CANCELLED: "CANCELED",
+    "ملغي": "CANCELED",
+  };
+  return map[status] || "NEW";
+}
 
 function formatDate(dateStr) {
   if (!dateStr) return "غير متوفر";
@@ -69,7 +110,7 @@ export default function OrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [currentRole, setCurrentRole] = useState(null);
-  const [selectedStatus, setSelectedStatus] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("NEW");
 
   useEffect(() => {
     const token = localStorage.getItem("sudanzonToken");
@@ -99,7 +140,7 @@ export default function OrderDetailPage() {
     })
       .then((result) => {
         setOrder(result.item || null);
-        setSelectedStatus(result.item?.status || "PENDING");
+        setSelectedStatus(toStandardStatus(result.item?.rawStatus || result.item?.status));
         setMessage("");
       })
       .catch((error) => setMessage(error.message))
@@ -113,6 +154,7 @@ export default function OrderDetailPage() {
     if (!token || !selectedStatus) return;
 
     try {
+      setMessage("جارِ حفظ وتحديث الحالة...");
       await apiJson(`/api/orders/${orderId}/status`, {
         method: "PATCH",
         headers: { Authorization: `Bearer ${token}` },
@@ -122,7 +164,10 @@ export default function OrderDetailPage() {
       const refreshed = await apiJson(`/api/orders/${orderId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setOrder(refreshed.item || null);
+      if (refreshed.item) {
+        setOrder(refreshed.item);
+        setSelectedStatus(toStandardStatus(refreshed.item.rawStatus || refreshed.item.status));
+      }
       setTimeout(() => setMessage(""), 3000);
     } catch (error) {
       setMessage(error.message || "تعذر تحديث الحالة");
@@ -131,7 +176,14 @@ export default function OrderDetailPage() {
 
   const currentStepIndex = useMemo(() => {
     if (!order) return 0;
-    return statusStepIndices[order.status] ?? 0;
+    const lookup = order.rawStatus || order.status;
+    return statusStepIndices[lookup] ?? statusStepIndices[order.status] ?? 0;
+  }, [order]);
+
+  const isCancelled = useMemo(() => {
+    if (!order) return false;
+    const s = String(order.rawStatus || order.status);
+    return s === "CANCELED" || s === "CANCELLED" || s === "ملغي";
   }, [order]);
 
   const itemsTotal = useMemo(() => {
@@ -199,7 +251,7 @@ export default function OrderDetailPage() {
               <div className="szTimelineCard">
                 <h2 className="szTimelineHeading">📍 خط سير ومسار الشحنة</h2>
 
-                {order.status === "CANCELLED" ? (
+                {isCancelled ? (
                   <div className="szOrderCancelledNotice">
                     <span className="szCancelIcon">✕</span>
                     <div>
@@ -243,11 +295,11 @@ export default function OrderDetailPage() {
                         value={selectedStatus}
                         onChange={(e) => setSelectedStatus(e.target.value)}
                       >
-                        <option value="PENDING">جديد (قيد المراجعة)</option>
-                        <option value="PROCESSING">قيد التجهيز في المتجر</option>
+                        <option value="NEW">جديد (قيد المراجعة)</option>
+                        <option value="PROCESSING">قيد التجهيز والتغليف</option>
                         <option value="SHIPPED">خرج مع المندوب</option>
-                        <option value="DELIVERED">تم التسليم للعميل</option>
-                        <option value="CANCELLED">إلغاء الطلب</option>
+                        <option value="DELIVERED">تم التسليم بنجاح</option>
+                        <option value="CANCELED">إلغاء الطلب</option>
                       </select>
                       <button
                         type="button"
