@@ -118,13 +118,25 @@ export default function PartnerSponsorStrip({ ads = [] }) {
                       target={isExternal ? "_blank" : "_self"}
                       rel={isExternal ? "noopener noreferrer" : ""}
                       onClick={() => trackAdClick(ad.id)}
-                      className="szPartnerCtaBtn"
+                      className={ad.actionType === "WHATSAPP" ? "szPartnerWhatsappBtn" : "szPartnerCtaBtn"}
                     >
                       <span>{getActionLabel(ad)}</span>
                       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5">
                         <path d="M19 12H5M12 19l-7-7 7-7" />
                       </svg>
                     </a>
+
+                    {ad.actionType !== "WHATSAPP" && ad.whatsappPhone && (
+                      <a
+                        href={`https://wa.me/${String(ad.whatsappPhone).replace(/[^0-9]/g, "")}${ad.whatsappText ? `?text=${encodeURIComponent(ad.whatsappText)}` : ""}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => trackAdClick(ad.id)}
+                        className="szPartnerWhatsappBtn"
+                      >
+                        <span>💬 تواصل واتساب</span>
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>
