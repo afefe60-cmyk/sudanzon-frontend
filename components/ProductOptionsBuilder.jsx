@@ -105,11 +105,14 @@ export default function ProductOptionsBuilder({
   };
 
   const addValueToOption = (index, val) => {
-    const trimmed = String(val).trim();
+    const trimmed = String(val || "").trim();
     if (!trimmed) return;
     const updated = [...options];
-    if (!updated[index].values.includes(trimmed)) {
-      updated[index].values = [...updated[index].values, trimmed];
+    const existingStrings = (updated[index]?.values || []).map((v) =>
+      typeof v === "object" && v !== null ? v.value : String(v)
+    );
+    if (!existingStrings.includes(trimmed)) {
+      updated[index].values = [...(updated[index].values || []), trimmed];
       setOptions(updated);
     }
     setNewValueInputs({ ...newValueInputs, [index]: "" });
@@ -245,18 +248,24 @@ export default function ProductOptionsBuilder({
                 <div className="szOptionValuesContainer">
                   <label>قيم الخيار (Values):</label>
                   <div className="szValuesWrap">
-                    {opt.values.map((val, valIdx) => (
-                      <span key={valIdx} className="szValueTag">
-                        <span>{val}</span>
-                        <button
-                          type="button"
-                          onClick={() => removeValueFromOption(optIdx, valIdx)}
-                          className="szRemoveTagBtn"
-                        >
-                          ✕
-                        </button>
-                      </span>
-                    ))}
+                    {(Array.isArray(opt.values) ? opt.values : []).map((val, valIdx) => {
+                      const displayVal =
+                        typeof val === "object" && val !== null
+                          ? val.value || val.name || ""
+                          : String(val);
+                      return (
+                        <span key={valIdx} className="szValueTag">
+                          <span>{displayVal}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeValueFromOption(optIdx, valIdx)}
+                            className="szRemoveTagBtn"
+                          >
+                            ✕
+                          </button>
+                        </span>
+                      );
+                    })}
 
                     <div className="szAddValueInputWrap">
                       <input
@@ -358,9 +367,15 @@ export default function ProductOptionsBuilder({
                   </thead>
                   <tbody>
                     {variants.map((v, vIdx) => {
-                      const title = (v.optionValues || [])
-                        .map((ov) => ov.value || ov.valueId)
-                        .join(" + ");
+                      const title =
+                        (v.optionValues || [])
+                          .map((ov) =>
+                            typeof ov === "object" && ov !== null
+                              ? ov.value || ov.valueId || ""
+                              : String(ov)
+                          )
+                          .filter(Boolean)
+                          .join(" + ") || "خيار افتراضي";
 
                       return (
                         <tr key={v.id || vIdx} className={!v.isActive ? "is-inactive" : ""}>

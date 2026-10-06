@@ -156,15 +156,39 @@ export default function AdminProductsClient() {
   const startCreateProduct = () => {
     setForm(emptyForm);
     setGalleryImages([]);
+    setHasVariants(false);
+    setOptions([]);
+    setVariants([]);
     setIsEditing(false);
     setShowModal(true);
   };
 
   const editProduct = (product) => {
     setHasVariants(Boolean(product.hasVariants));
-    setOptions(product.options || []);
-    setVariants(product.variants || []);
+
+    // Normalize options so values are clean string lists
+    const normalizedOptions = (product.options || []).map((opt) => ({
+      name: opt.name || "",
+      values: Array.isArray(opt.values)
+        ? opt.values.map((v) => (typeof v === "object" && v !== null ? v.value : String(v)))
+        : [],
+    }));
+    setOptions(normalizedOptions);
+
+    // Normalize variants
+    const normalizedVariants = (product.variants || []).map((v) => ({
+      ...v,
+      price: String(v.price ?? ""),
+      comparePrice: v.comparePrice != null ? String(v.comparePrice) : "",
+      stock: String(v.stock ?? ""),
+      sku: v.sku || "",
+      image: v.image || "",
+      isActive: v.isActive !== false,
+      optionValues: Array.isArray(v.optionValues) ? v.optionValues : [],
+    }));
+    setVariants(normalizedVariants);
     setIsEditing(true);
+
     const parsedImages = parseImageList(product.images);
     const currentMainImage = product.image || parsedImages[0] || "";
     const allImages = parsedImages.length ? parsedImages : currentMainImage ? [currentMainImage] : [];
