@@ -14,18 +14,75 @@ export default function ProductDetailClient({ product, specs = [] }) {
   const [added, setAdded] = useState(false);
   const [isFav, setIsFav] = useState(false);
 
-  // Initialize selected options with first value of each option
+  // Available values per option that actually exist in active variants
+  const availableOptionValues = useMemo(() => {
+    if (!product?.hasVariants || !Array.isArray(product.variants) || product.variants.length === 0) {
+      return null;
+    }
+    const map = new Map();
+    let hasAnyLinkedValues = false;
+
+    product.variants.forEach((v) => {
+      if (v.isActive === false) return;
+      (v.optionValues || []).forEach((ov) => {
+        const optName = ov.optionName || product.options?.find((o) => o.id === ov.optionId)?.name;
+        const val = typeof ov === "object" ? ov.value : String(ov);
+        if (optName && val) {
+          hasAnyLinkedValues = true;
+          if (!map.has(optName)) map.set(optName, new Set());
+          map.get(optName).add(val);
+        }
+      });
+    });
+
+    // If variants have no linked optionValues yet (e.g. from legacy state), attempt to match from SKU or single variant
+    if (!hasAnyLinkedValues && product.variants.length > 0) {
+      product.variants.forEach((v) => {
+        (product.options || []).forEach((opt) => {
+          (opt.values || []).forEach((valObj) => {
+            const valStr = typeof valObj === "object" ? valObj.value : String(valObj);
+            if (valStr && v.sku && v.sku.includes(valStr.slice(0, 3))) {
+              hasAnyLinkedValues = true;
+              if (!map.has(opt.name)) map.set(opt.name, new Set());
+              map.get(opt.name).add(valStr);
+            }
+          });
+        });
+      });
+    }
+
+    return hasAnyLinkedValues ? map : null;
+  }, [product]);
+
+  // Initialize selected options with first available valid value of each option
   const initialSelectedOptions = useMemo(() => {
     const initial = {};
     if (product?.hasVariants && Array.isArray(product.options)) {
+      // First try to initialize from first active variant
+      const firstActiveVariant = (product.variants || []).find((v) => v.isActive !== false) || product.variants?.[0];
+      if (firstActiveVariant && Array.isArray(firstActiveVariant.optionValues) && firstActiveVariant.optionValues.length > 0) {
+        firstActiveVariant.optionValues.forEach((ov) => {
+          const optName = ov.optionName || product.options?.find((o) => o.id === ov.optionId)?.name;
+          if (optName && ov.value) {
+            initial[optName] = ov.value;
+          }
+        });
+      }
+
       product.options.forEach((opt) => {
-        if (opt.name && Array.isArray(opt.values) && opt.values.length > 0) {
-          initial[opt.name] = opt.values[0].value || opt.values[0];
+        if (!initial[opt.name] && opt.name && Array.isArray(opt.values) && opt.values.length > 0) {
+          const allowed = availableOptionValues?.get(opt.name);
+          const firstValid = allowed
+            ? opt.values.find((val) => allowed.has(typeof val === "object" ? val.value : String(val)))
+            : opt.values[0];
+          if (firstValid) {
+            initial[opt.name] = typeof firstValid === "object" ? firstValid.value : String(firstValid);
+          }
         }
       });
     }
     return initial;
-  }, [product]);
+  }, [product, availableOptionValues]);
 
   const [selectedOptions, setSelectedOptions] = useState(initialSelectedOptions);
 
@@ -40,7 +97,10 @@ export default function ProductDetailClient({ product, specs = [] }) {
     }
 
     const found = product.variants.find((v) => {
-      if (!Array.isArray(v.optionValues) || v.optionValues.length === 0) return false;
+      if (!Array.isArray(v.optionValues) || v.optionValues.length === 0) {
+        if (product.variants.length === 1) return true;
+        return false;
+      }
       return v.optionValues.every((ov) => {
         const optName = ov.optionName || product.options?.find((o) => o.id === ov.optionId)?.name;
         if (!optName) return true;
@@ -228,6 +288,14 @@ export default function ProductDetailClient({ product, specs = [] }) {
               {product.options.map((opt) => {
                 const optName = opt.name;
                 const activeVal = selectedOptions[optName];
+                const allowedSet = availableOptionValues?.get(optName);
+
+                const visibleValues = (opt.values || []).filter((valObj) => {
+                  const valStr = typeof valObj === "object" ? valObj.value : String(valObj);
+                  return !allowedSet || allowedSet.has(valStr);
+                });
+
+                if (visibleValues.length === 0) return null;
 
                 return (
                   <div key={opt.id || optName} className="szOptionGroup">
@@ -237,8 +305,8 @@ export default function ProductDetailClient({ product, specs = [] }) {
                     </div>
 
                     <div className="szOptionPills">
-                      {(opt.values || []).map((valObj) => {
-                        const valStr = typeof valObj === "object" ? valObj.value : valObj;
+                      {visibleValues.map((valObj) => {
+                        const valStr = typeof valObj === "object" ? valObj.value : String(valObj);
                         const isSelected = activeVal === valStr;
 
                         return (

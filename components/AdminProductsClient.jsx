@@ -239,7 +239,47 @@ export default function AdminProductsClient() {
     newFiles.forEach((file) => payload.append("imageFiles", file));
     payload.append("hasVariants", String(hasVariants));
     if (hasVariants) {
-      payload.append("options", JSON.stringify(options));
+      let finalOptions = options;
+      if (Array.isArray(variants) && variants.length > 0) {
+        const usedByOpt = new Map();
+        let hasExplicit = false;
+
+        variants.forEach((v) => {
+          (v.optionValues || []).forEach((ov) => {
+            const oName = typeof ov === "object" ? (ov.optionName || "").trim() : "";
+            const oVal = typeof ov === "object" ? (ov.value || "").trim() : String(ov).trim();
+            if (oVal) {
+              hasExplicit = true;
+              if (oName) {
+                if (!usedByOpt.has(oName)) usedByOpt.set(oName, new Set());
+                usedByOpt.get(oName).add(oVal);
+              } else {
+                if (!usedByOpt.has("__all__")) usedByOpt.set("__all__", new Set());
+                usedByOpt.get("__all__").add(oVal);
+              }
+            }
+          });
+        });
+
+        if (hasExplicit) {
+          finalOptions = options
+            .map((opt) => {
+              const oName = (opt.name || "").trim();
+              const allowed = usedByOpt.get(oName) || usedByOpt.get("__all__");
+              if (!allowed) return opt;
+              return {
+                ...opt,
+                values: (opt.values || []).filter((val) => {
+                  const str = typeof val === "object" && val !== null ? val.value : String(val);
+                  return allowed.has(String(str).trim());
+                }),
+              };
+            })
+            .filter((opt) => opt.values && opt.values.length > 0);
+        }
+      }
+
+      payload.append("options", JSON.stringify(finalOptions));
       payload.append("variants", JSON.stringify(variants));
     }
     payload.append("existingImages", JSON.stringify(existingImgs));

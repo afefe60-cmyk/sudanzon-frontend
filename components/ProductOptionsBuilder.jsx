@@ -95,12 +95,29 @@ export default function ProductOptionsBuilder({
   };
 
   const removeOption = (index) => {
-    setOptions(options.filter((_, i) => i !== index));
+    const targetOpt = options[index];
+    const optName = (targetOpt?.name || "").trim();
+    const updated = options.filter((_, i) => i !== index);
+    setOptions(updated);
+
+    if (updated.length === 0) {
+      setVariants([]);
+    } else if (optName && Array.isArray(variants)) {
+      setVariants(
+        variants.map((v) => ({
+          ...v,
+          optionValues: (v.optionValues || []).filter((ov) => {
+            const ovOpt = typeof ov === "object" ? ov.optionName : "";
+            return ovOpt ? ovOpt.trim() !== optName : true;
+          }),
+        }))
+      );
+    }
   };
 
   const updateOptionName = (index, name) => {
     const updated = [...options];
-    updated[index].name = name;
+    updated[index] = { ...updated[index], name };
     setOptions(updated);
   };
 
@@ -112,16 +129,88 @@ export default function ProductOptionsBuilder({
       typeof v === "object" && v !== null ? v.value : String(v)
     );
     if (!existingStrings.includes(trimmed)) {
-      updated[index].values = [...(updated[index].values || []), trimmed];
+      updated[index] = {
+        ...updated[index],
+        values: [...(updated[index].values || []), trimmed],
+      };
       setOptions(updated);
     }
     setNewValueInputs({ ...newValueInputs, [index]: "" });
   };
 
   const removeValueFromOption = (optIndex, valIndex) => {
-    const updated = [...options];
-    updated[optIndex].values = updated[optIndex].values.filter((_, i) => i !== valIndex);
+    const targetOpt = options[optIndex];
+    if (!targetOpt) return;
+    const targetVal = targetOpt.values?.[valIndex];
+    const targetValStr = typeof targetVal === "object" && targetVal !== null ? targetVal.value : String(targetVal || "");
+    const optName = (targetOpt.name || "").trim();
+
+    const updated = options.map((opt, i) => {
+      if (i !== optIndex) return opt;
+      return {
+        ...opt,
+        values: (opt.values || []).filter((_, vi) => vi !== valIndex),
+      };
+    });
     setOptions(updated);
+
+    // Also remove variants containing this deleted value
+    if (targetValStr && Array.isArray(variants)) {
+      setVariants(
+        variants.filter((v) => {
+          const matchesTarget = (v.optionValues || []).some((ov) => {
+            const ovVal = typeof ov === "object" ? ov.value : String(ov);
+            const ovOpt = typeof ov === "object" ? ov.optionName : "";
+            if (optName && ovOpt) {
+              return ovOpt.trim() === optName && String(ovVal).trim() === targetValStr.trim();
+            }
+            return String(ovVal).trim() === targetValStr.trim();
+          });
+          return !matchesTarget;
+        })
+      );
+    }
+  };
+
+  const syncOptionsWithTable = () => {
+    if (!Array.isArray(variants) || variants.length === 0) return;
+    const usedByOpt = new Map();
+    let hasExplicit = false;
+
+    variants.forEach((v) => {
+      (v.optionValues || []).forEach((ov) => {
+        const oName = typeof ov === "object" ? (ov.optionName || "").trim() : "";
+        const oVal = typeof ov === "object" ? (ov.value || "").trim() : String(ov).trim();
+        if (oVal) {
+          hasExplicit = true;
+          if (oName) {
+            if (!usedByOpt.has(oName)) usedByOpt.set(oName, new Set());
+            usedByOpt.get(oName).add(oVal);
+          } else {
+            if (!usedByOpt.has("__all__")) usedByOpt.set("__all__", new Set());
+            usedByOpt.get("__all__").add(oVal);
+          }
+        }
+      });
+    });
+
+    if (hasExplicit) {
+      const synced = options
+        .map((opt) => {
+          const oName = (opt.name || "").trim();
+          const allowed = usedByOpt.get(oName) || usedByOpt.get("__all__");
+          if (!allowed) return opt;
+          return {
+            ...opt,
+            values: (opt.values || []).filter((val) => {
+              const str = typeof val === "object" && val !== null ? val.value : String(val);
+              return allowed.has(String(str).trim());
+            }),
+          };
+        })
+        .filter((opt) => opt.values && opt.values.length > 0);
+      setOptions(synced);
+    }
   };
 
   const applyPreset = (preset) => {
@@ -347,6 +436,16 @@ export default function ProductOptionsBuilder({
                       تطبيق المخزون
                     </button>
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={syncOptionsWithTable}
+                    className="szBulkBtn"
+                    style={{ background: "#0284c7" }}
+                    title="حذف أي قيم خيارات غير مستخدمة في جدول المتغيرات"
+                  >
+                    ⚡ مطابقة الخيارات مع الجدول
+                  </button>
                 </div>
               </div>
 
