@@ -96,20 +96,55 @@ export default function ProductDetailClient({ product, specs = [] }) {
       return null;
     }
 
-    const found = product.variants.find((v) => {
-      if (!Array.isArray(v.optionValues) || v.optionValues.length === 0) {
-        if (product.variants.length === 1) return true;
-        return false;
-      }
-      return v.optionValues.every((ov) => {
-        const optName = ov.optionName || product.options?.find((o) => o.id === ov.optionId)?.name;
-        if (!optName) return true;
-        const selVal = selectedOptions[optName];
-        return selVal === ov.value;
+    const selEntries = Object.entries(selectedOptions).filter(([_, v]) => Boolean(v));
+
+    const matchVariantViaSku = (v) => {
+      if (!v.sku || selEntries.length === 0) return false;
+      const cleanSku = String(v.sku).toLowerCase();
+      return selEntries.every(([_, selVal]) => {
+        const cleanVal = String(selVal).toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]/g, "");
+        const sub3 = cleanVal.slice(0, 3);
+        return cleanSku.includes(cleanVal) || (sub3 && cleanSku.includes(sub3));
       });
+    };
+
+    const found = product.variants.find((v) => {
+      if (Array.isArray(v.optionValues) && v.optionValues.length > 0) {
+        return v.optionValues.every((ov) => {
+          const optName = ov.optionName || product.options?.find((o) => o.id === ov.optionId)?.name;
+          if (!optName) return true;
+          const selVal = selectedOptions[optName];
+          return !selVal || selVal === ov.value;
+        });
+      }
+
+      return matchVariantViaSku(v);
     });
 
-    return found || product.variants[0];
+    if (found) return found;
+
+    if (selEntries.length > 0) {
+      let bestMatch = null;
+      let maxScore = -1;
+      product.variants.forEach((v) => {
+        let score = 0;
+        const cleanSku = String(v.sku || "").toLowerCase();
+        selEntries.forEach(([_, selVal]) => {
+          const cleanVal = String(selVal).toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]/g, "");
+          const sub3 = cleanVal.slice(0, 3);
+          if (cleanSku && (cleanSku.includes(cleanVal) || cleanSku.includes(sub3))) {
+            score += 2;
+          }
+        });
+        if (score > maxScore) {
+          maxScore = score;
+          bestMatch = v;
+        }
+      });
+      if (bestMatch && maxScore > 0) return bestMatch;
+    }
+
+    return product.variants[0];
   }, [product, selectedOptions]);
 
   // Sync image if variant has its own image

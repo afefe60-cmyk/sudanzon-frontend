@@ -175,17 +175,36 @@ export default function AdminProductsClient() {
     }));
     setOptions(normalizedOptions);
 
-    // Normalize variants
-    const normalizedVariants = (product.variants || []).map((v) => ({
-      ...v,
-      price: String(v.price ?? ""),
-      comparePrice: v.comparePrice != null ? String(v.comparePrice) : "",
-      stock: String(v.stock ?? ""),
-      sku: v.sku || "",
-      image: v.image || "",
-      isActive: v.isActive !== false,
-      optionValues: Array.isArray(v.optionValues) ? v.optionValues : [],
-    }));
+    // Normalize variants and recover optionValues if empty
+    const normalizedVariants = (product.variants || []).map((v) => {
+      let optVals = Array.isArray(v.optionValues) ? [...v.optionValues] : [];
+      if (optVals.length === 0 && v.sku && normalizedOptions.length > 0) {
+        const cleanSku = String(v.sku).toLowerCase();
+        normalizedOptions.forEach((opt) => {
+          const matchedVal = (opt.values || []).find((val) => {
+            const valStr = typeof val === "object" && val !== null ? val.value || val.name || "" : String(val);
+            const cleanVal = String(valStr).toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]/g, "");
+            const sub3 = cleanVal.slice(0, 3);
+            return cleanSku.includes(cleanVal) || (sub3 && cleanSku.includes(sub3));
+          });
+          if (matchedVal) {
+            const valStr = typeof matchedVal === "object" && matchedVal !== null ? matchedVal.value || matchedVal.name || "" : String(matchedVal);
+            optVals.push({ optionName: opt.name, value: valStr });
+          }
+        });
+      }
+
+      return {
+        ...v,
+        price: String(v.price ?? ""),
+        comparePrice: v.comparePrice != null ? String(v.comparePrice) : "",
+        stock: String(v.stock ?? ""),
+        sku: v.sku || "",
+        image: v.image || "",
+        isActive: v.isActive !== false,
+        optionValues: optVals,
+      };
+    });
     setVariants(normalizedVariants);
     setIsEditing(true);
 
