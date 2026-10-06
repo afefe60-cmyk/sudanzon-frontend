@@ -46,6 +46,7 @@ export default function SellerProductsClient() {
   const [categories, setCategories] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("ALL");
+  const [sortBy, setSortBy] = useState("DEFAULT");
   const [hasVariants, setHasVariants] = useState(false);
   const [options, setOptions] = useState([]);
   const [variants, setVariants] = useState([]);
@@ -299,7 +300,7 @@ export default function SellerProductsClient() {
 
   // Filtered Products List
   const filteredProducts = useMemo(() => {
-    return products.filter((p) => {
+    let result = products.filter((p) => {
       const matchQuery =
         !searchQuery ||
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -308,7 +309,21 @@ export default function SellerProductsClient() {
       const matchCat = selectedCategoryFilter === "ALL" || pCat === selectedCategoryFilter;
       return matchQuery && matchCat;
     });
-  }, [products, searchQuery, selectedCategoryFilter]);
+
+    if (sortBy === "MOST_VIEWED") {
+      result.sort((a, b) => (Number(b.viewsCount) || 0) - (Number(a.viewsCount) || 0));
+    } else if (sortBy === "MOST_CLICKED") {
+      result.sort((a, b) => (Number(b.clicksCount) || 0) - (Number(a.clicksCount) || 0));
+    } else if (sortBy === "MOST_SOLD") {
+      result.sort((a, b) => (Number(b.salesCount) || 0) - (Number(a.salesCount) || 0));
+    } else if (sortBy === "PRICE_DESC") {
+      result.sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0));
+    } else if (sortBy === "PRICE_ASC") {
+      result.sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0));
+    }
+
+    return result;
+  }, [products, searchQuery, selectedCategoryFilter, sortBy]);
 
   const previewPrice = Number(form.price || 0);
   const previewDiscount = Number(form.discount || 0);
@@ -369,6 +384,20 @@ export default function SellerProductsClient() {
             </div>
 
             <div className="szCatalogActionsRight">
+              <select
+                className="szCatalogFilterSelect"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                style={{ fontWeight: 600, color: "#059669" }}
+              >
+                <option value="DEFAULT">الترتيب الافتراضي</option>
+                <option value="MOST_VIEWED">👁️ الأكثر مشاهدة</option>
+                <option value="MOST_CLICKED">👆 الأكثر نقراً</option>
+                <option value="MOST_SOLD">🛒 الأكثر مبيعاً</option>
+                <option value="PRICE_DESC">الأعلى سعراً</option>
+                <option value="PRICE_ASC">الأقل سعراً</option>
+              </select>
+
               <select
                 className="szCatalogFilterSelect"
                 value={selectedCategoryFilter}
@@ -438,6 +467,24 @@ export default function SellerProductsClient() {
                       <div className="szMerchantPriceRow">
                         <strong className="szMerchantPrice">{pPrice.toLocaleString()} ج.س</strong>
                         <span className="szMerchantRating">★ {p.rating || "4.8"}</span>
+                      </div>
+
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "6px 10px",
+                        margin: "6px 0 10px",
+                        background: "#f0fdf4",
+                        borderRadius: "8px",
+                        border: "1px solid #bbf7d0",
+                        fontSize: "0.78rem",
+                        color: "#166534",
+                        fontWeight: 600,
+                      }}>
+                        <span title="عدد المشاهدات والزيارات">👁️ {p.viewsCount || 0} زيارة</span>
+                        <span title="عدد النقرات والتفاعل">👆 {p.clicksCount || 0} نقرة</span>
+                        <span title="عدد الطلبات">🛒 {p.salesCount || 0} طلب</span>
                       </div>
 
                       <div className="szMerchantCardActions">

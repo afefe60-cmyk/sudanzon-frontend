@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useMemo, useEffect } from "react";
 import { addToCartItem } from "../lib/cart";
 import { getProductImages } from "../lib/media";
+import { trackProductView, trackProductClick } from "../lib/product-analytics";
 
 export default function ProductDetailClient({ product, specs = [] }) {
   const router = useRouter();
@@ -13,6 +14,13 @@ export default function ProductDetailClient({ product, specs = [] }) {
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const [isFav, setIsFav] = useState(false);
+
+  // Track product view on mount
+  useEffect(() => {
+    if (product?.id) {
+      trackProductView(product.id);
+    }
+  }, [product?.id]);
 
   // Available values per option that actually exist in active variants
   const availableOptionValues = useMemo(() => {
@@ -176,6 +184,7 @@ export default function ProductDetailClient({ product, specs = [] }) {
 
   const handleAddToCart = () => {
     if (isOutOfStock) return;
+    if (product?.id) trackProductClick(product.id);
     addToCartItem(product, quantity, matchedVariant, selectedOptions);
     setAdded(true);
     window.dispatchEvent(new Event("sudanzon-cart-updated"));
@@ -184,6 +193,7 @@ export default function ProductDetailClient({ product, specs = [] }) {
 
   const handleBuyNow = () => {
     if (isOutOfStock) return;
+    if (product?.id) trackProductClick(product.id);
     addToCartItem(product, quantity, matchedVariant, selectedOptions);
     window.dispatchEvent(new Event("sudanzon-cart-updated"));
     router.push("/cart");

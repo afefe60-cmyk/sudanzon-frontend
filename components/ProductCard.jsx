@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { addToCartItem } from "../lib/cart";
 import { getProductImage } from "../lib/media";
+import { trackProductClick } from "../lib/product-analytics";
 
 export default function ProductCard({ product, badge, isHot = false }) {
   const [added, setAdded] = useState(false);
@@ -22,6 +23,7 @@ export default function ProductCard({ product, badge, isHot = false }) {
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    if (product?.id) trackProductClick(product.id);
     addToCartItem(product, 1);
     setAdded(true);
     window.dispatchEvent(new Event("sudanzon-cart-updated"));
@@ -57,7 +59,11 @@ export default function ProductCard({ product, badge, isHot = false }) {
       </div>
 
       {/* Product Image Link */}
-      <Link href={`/products/${product.id}`} className="szImageLink">
+      <Link
+        href={`/products/${product.id}`}
+        className="szImageLink"
+        onClick={() => product?.id && trackProductClick(product.id)}
+      >
         <div className="szImageWrap">
           <img
             src={getProductImage(product)}
@@ -91,7 +97,11 @@ export default function ProductCard({ product, badge, isHot = false }) {
           </div>
         </div>
 
-        <Link href={`/products/${product.id}`} className="szTitleLink">
+        <Link
+          href={`/products/${product.id}`}
+          className="szTitleLink"
+          onClick={() => product?.id && trackProductClick(product.id)}
+        >
           <h3 className="szTitle" title={product.name}>{product.name}</h3>
         </Link>
 

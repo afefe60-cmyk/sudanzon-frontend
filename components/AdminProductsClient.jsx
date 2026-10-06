@@ -36,6 +36,7 @@ export default function AdminProductsClient() {
   const [search, setSearch] = useState("");
   const [selectedCat, setSelectedCat] = useState("ALL");
   const [selectedVendorFilter, setSelectedVendorFilter] = useState("ALL");
+  const [sortBy, setSortBy] = useState("DEFAULT");
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [spotlightInfo, setSpotlightInfo] = useState(null);
@@ -356,7 +357,7 @@ export default function AdminProductsClient() {
   };
 
   const filteredProducts = useMemo(() => {
-    return products.filter((p) => {
+    let result = products.filter((p) => {
       const matchCat = selectedCat === "ALL" || (p.category?.name || p.category) === selectedCat;
       const matchVendor = selectedVendorFilter === "ALL" || p.vendor?.id === selectedVendorFilter;
       const matchSearch =
@@ -365,7 +366,21 @@ export default function AdminProductsClient() {
         (p.vendor?.storeName && p.vendor.storeName.toLowerCase().includes(search.toLowerCase()));
       return matchCat && matchVendor && matchSearch;
     });
-  }, [products, selectedCat, selectedVendorFilter, search]);
+
+    if (sortBy === "MOST_VIEWED") {
+      result.sort((a, b) => (Number(b.viewsCount) || 0) - (Number(a.viewsCount) || 0));
+    } else if (sortBy === "MOST_CLICKED") {
+      result.sort((a, b) => (Number(b.clicksCount) || 0) - (Number(a.clicksCount) || 0));
+    } else if (sortBy === "MOST_SOLD") {
+      result.sort((a, b) => (Number(b.salesCount) || 0) - (Number(a.salesCount) || 0));
+    } else if (sortBy === "PRICE_DESC") {
+      result.sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0));
+    } else if (sortBy === "PRICE_ASC") {
+      result.sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0));
+    }
+
+    return result;
+  }, [products, selectedCat, selectedVendorFilter, search, sortBy]);
 
   return (
     <div className="szAdminProductsWrapper">
@@ -385,6 +400,20 @@ export default function AdminProductsClient() {
         </div>
 
         <div className="szAdminActionsRight">
+          <select
+            className="szCatalogFilterSelect"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            style={{ fontWeight: 600, color: "#0284c7" }}
+          >
+            <option value="DEFAULT">الترتيب الافتراضي</option>
+            <option value="MOST_VIEWED">👁️ الأكثر مشاهدة</option>
+            <option value="MOST_CLICKED">👆 الأكثر نقراً</option>
+            <option value="MOST_SOLD">🛒 الأكثر طلباً ومبيعاً</option>
+            <option value="PRICE_DESC">الأعلى سعراً</option>
+            <option value="PRICE_ASC">الأقل سعراً</option>
+          </select>
+
           <select
             className="szCatalogFilterSelect"
             value={selectedCat}
@@ -779,6 +808,7 @@ export default function AdminProductsClient() {
                   <th>التصنيف</th>
                   <th>السعر</th>
                   <th>المخزون</th>
+                  <th>التحليلات والتفاعل</th>
                   <th style={{ textAlign: "center" }}>إجراءات الإدارة</th>
                 </tr>
               </thead>
@@ -866,6 +896,19 @@ export default function AdminProductsClient() {
                         <span className={`szQtyBadge ${Number(product.stock || 0) <= 3 ? "is-low" : ""}`}>
                           {Number(product.stock || 0)} قطعة
                         </span>
+                      </td>
+                      <td>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "12px", whiteSpace: "nowrap" }}>
+                          <span style={{ color: "#0284c7", fontWeight: 600 }}>
+                            👁️ {Number(product.viewsCount || 0).toLocaleString()} مشاهدة
+                          </span>
+                          <span style={{ color: "#64748b" }}>
+                            👆 {Number(product.clicksCount || 0).toLocaleString()} نقرة
+                          </span>
+                          <span style={{ color: Number(product.salesCount || 0) > 0 ? "#16a34a" : "#94a3b8", fontWeight: 600 }}>
+                            🛒 {Number(product.salesCount || 0).toLocaleString()} طلب شراء
+                          </span>
+                        </div>
                       </td>
                       <td>
                         <div
