@@ -77,6 +77,69 @@ async function loadProducts(filters = {}) {
   }
 }
 
+export async function generateMetadata({ searchParams }) {
+  const currentCategory = searchParams?.category?.trim() || "";
+  const currentQuery = searchParams?.q?.trim() || "";
+
+  if (currentCategory) {
+    let catTitle = `${currentCategory} في السودان - أفضل الأسعار والعروض | سودان زون`;
+    let catDesc = `تسوق أفضل منتجات ${currentCategory} الأصلية بأسعار منافسة في السودان. شحن وتوصيل يومي لكافة الولايات (الخرطوم، دنقلا، بورتسودان) ودفع عند الاستلام وبنكك.`;
+
+    if (currentCategory === "ملابس") {
+      catTitle = "ملابس وأزياء في السودان - أحدث الموديلات وأفضل الأسعار | سودان زون";
+      catDesc = "تسوق ملابس وأزياء سودانية فاخرة، عبايات وطرح، أحدث الموديلات بأفضل الأسعار في السودان مع شحن سريع ودفع بنكك.";
+    } else if (currentCategory === "مستحضرات تجميل") {
+      catTitle = "مستحضرات تجميل وكريمات عناية وتفتيح في السودان | سودان زون";
+      catDesc = "تسوقي منتجات التجميل، كريمات التفتيح والنضارة ومستلزمات العناية الأصلية في السودان. توصيل سريع للخرطوم والولايات ودفع بنكك.";
+    } else if (currentCategory === "عطور") {
+      catTitle = "عطور وبخور وزيوت عطرية في السودان - روائح أصلية فاخرة | سودان زون";
+      catDesc = "أفخم العطور الشرقية والفرنسية، البخور والصندل الأصلي في السودان. أفضل الأسعار وشحن سريع لكافة الولايات والدفع بنكك.";
+    } else if (currentCategory === "موبايلات") {
+      catTitle = "موبايلات وهواتف ذكية للبيع في السودان - أحدث الأجهزة | سودان زون";
+      catDesc = "عروض وأسعار الهواتف الذكية في السودان. أجهزة جديدة ومضمونة مع شحن سريع وضمان استلام ودفع بنكك.";
+    }
+
+    return {
+      title: catTitle,
+      description: catDesc,
+      alternates: {
+        canonical: `https://sudanzon.com/products?category=${encodeURIComponent(currentCategory)}`,
+      },
+      openGraph: {
+        title: catTitle,
+        description: catDesc,
+        url: `https://sudanzon.com/products?category=${encodeURIComponent(currentCategory)}`,
+        siteName: "سودان زون | SudanZon",
+        locale: "ar_SD",
+        type: "website",
+      },
+    };
+  }
+
+  if (currentQuery) {
+    const queryTitle = `${currentQuery} في السودان - أفضل الأسعار والعروض | سودان زون`;
+    const queryDesc = `عروض وأسعار ${currentQuery} في السودان. شحن سريع وتوصيل يومي للخرطوم والولايات، دفع آمن عند الاستلام وبنكك على سوق سودان زون.`;
+    return {
+      title: queryTitle,
+      description: queryDesc,
+      openGraph: {
+        title: queryTitle,
+        description: queryDesc,
+        locale: "ar_SD",
+        type: "website",
+      },
+    };
+  }
+
+  return {
+    title: "تسوق أونلاين في السودان - كافة المنتجات والعروض الحصرية | سوق سودان زون",
+    description: "المنصة السودانية الأولى للتسوق الإلكتروني متعدد البائعين. آلاف المنتجات الأصلية: ملابس، هواتف، عطور، أدوات منزلية مع شحن سريع ودفع بنكك.",
+    alternates: {
+      canonical: "https://sudanzon.com/products",
+    },
+  };
+}
+
 export default async function ProductsPage({ searchParams }) {
   const currentQuery = searchParams?.q || "";
   const currentCategory = searchParams?.category || "";

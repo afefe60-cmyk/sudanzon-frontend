@@ -73,9 +73,23 @@ export async function generateMetadata({ params }) {
   const productName = product.name || "منتج فاخر";
   const priceFormatted = Number(product.price || 0).toLocaleString();
   const vendorName = product.vendor?.storeName || product.vendor || "سودان زون";
-  const desc =
-    product.description ||
-    `اشترِ ${productName} بسعر ${priceFormatted} ج.س من ${vendorName} عبر منصة سودان زون. شحن سريع لكافة الولايات والدفع عند الاستلام وبنكك.`;
+
+  // ذكاء اصطناعي للـ SEO: تعزيز العنوان والوصف لمحركات البحث بدون المساس بما كتبه التاجر
+  const hasLocation = /السودان|الخرطوم|بورتسودان|دنقلا|مدني|بحري|أمدرمان|امدرمان/i.test(productName);
+  const locationSuffix = hasLocation ? "" : "في السودان";
+  const hasPriceWord = /سعر|للبيع|شراء/i.test(productName);
+  const priceTag = hasPriceWord ? `${priceFormatted} ج.س` : `بأفضل سعر ${priceFormatted} ج.س`;
+
+  // العنوان الذي سيظهر في نتائج بحث Google (محفز للنقر CTR Booster)
+  const seoTitle = `${productName} ${locationSuffix} - ${priceTag} | توصيل ودفع بنكك • سودان زون`;
+
+  // وصف الميتا الغني بالكلمات المفتاحية والمدن التي يبحث عنها المتسوقون
+  const cleanDesc = (product.description || "").replace(/\s+/g, " ").trim();
+  const descLead = `تسوق ${productName} ${locationSuffix} بأفضل سعر (${priceFormatted} ج.س) من متجر ${vendorName}.`;
+  const descShipping = `شحن سريع وتوصيل يومي للخرطوم، دنقلا، بورتسودان وكافة ولايات السودان. دفع آمن عبر بنكك أو عند الاستلام.`;
+  const seoDesc = cleanDesc
+    ? `${descLead} ${cleanDesc.slice(0, 75)}... ${descShipping}`.slice(0, 160)
+    : `${descLead} ${descShipping}`.slice(0, 160);
 
   let imgUrl = getProductImage(product);
   if (imgUrl && imgUrl.startsWith("/")) {
@@ -85,14 +99,14 @@ export async function generateMetadata({ params }) {
   const canonicalUrl = `https://sudanzon.com/products/${params?.id}`;
 
   return {
-    title: `${productName} - ${priceFormatted} ج.س | سودان زون (SudanZon)`,
-    description: desc,
+    title: seoTitle,
+    description: seoDesc,
     alternates: {
       canonical: canonicalUrl,
     },
     openGraph: {
-      title: `${productName} | بسعر ${priceFormatted} ج.س على SudanZon`,
-      description: desc,
+      title: `${productName} ${locationSuffix} | ${priceFormatted} ج.س - سودان زون`,
+      description: seoDesc,
       url: canonicalUrl,
       siteName: "سودان زون | SudanZon",
       images: [
@@ -100,7 +114,7 @@ export async function generateMetadata({ params }) {
           url: imgUrl,
           width: 800,
           height: 800,
-          alt: productName,
+          alt: `${productName} ${locationSuffix}`,
         },
       ],
       locale: "ar_SD",
@@ -108,8 +122,8 @@ export async function generateMetadata({ params }) {
     },
     twitter: {
       card: "summary_large_image",
-      title: `${productName} - ${priceFormatted} ج.س`,
-      description: desc,
+      title: `${productName} ${locationSuffix} - ${priceFormatted} ج.س`,
+      description: seoDesc,
       images: [imgUrl],
     },
   };
@@ -142,8 +156,49 @@ export default async function ProductPage({ params }) {
   const ads = Array.isArray(adsResult?.items) ? adsResult.items : [];
   const specs = buildSpecs(product);
 
+  let schemaImg = getProductImage(product);
+  if (schemaImg && schemaImg.startsWith("/")) {
+    schemaImg = `https://sudanzon.com${schemaImg}`;
+  }
+
+  // Schema.org Structured Data for Google Rich Snippets
+  const productJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    image: [
+      schemaImg,
+      ...(Array.isArray(product.images)
+        ? product.images.map((img) => (img && img.startsWith("/") ? `https://sudanzon.com${img}` : img))
+        : []),
+    ].filter(Boolean),
+    description: product.description || `${product.name} متاح على سوق سودان زون`,
+    sku: String(product.id),
+    brand: {
+      "@type": "Brand",
+      name: product.vendor?.storeName || "سودان زون",
+    },
+    offers: {
+      "@type": "Offer",
+      url: `https://sudanzon.com/products/${product.id}`,
+      priceCurrency: "SDG",
+      price: Number(product.price || 0),
+      priceValidUntil: "2027-12-31",
+      itemCondition: "https://schema.org/NewCondition",
+      availability: (product.stock ?? 1) > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      seller: {
+        "@type": "Organization",
+        name: product.vendor?.storeName || "سودان زون",
+      },
+    },
+  };
+
   return (
     <main className="szPageShell">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+      />
       <SiteHeader />
 
       <div className="container szProductDetailContainer">
