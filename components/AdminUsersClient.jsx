@@ -107,14 +107,24 @@ export default function AdminUsersClient() {
       return;
     }
 
+    const isVendor = form.role === "VENDOR";
     const payload = {
-      ...form,
+      name: form.name.trim(),
       phone: form.phone.trim() || null,
       email: form.email.trim() || null,
-      storeName: form.storeName.trim() || null,
-      storeSlug: form.storeSlug.trim() || null,
-      description: form.description.trim() || null,
+      role: form.role,
+      city: form.city.trim() || null,
+      shippingAddress: form.shippingAddress ? form.shippingAddress.trim() : null,
+      alternatePhone: form.alternatePhone ? form.alternatePhone.trim() : null,
       password: form.password.trim() || undefined,
+      ...(isVendor
+        ? {
+            storeName: form.storeName.trim() || null,
+            storeSlug: form.storeSlug.trim() || null,
+            description: form.description.trim() || null,
+            approved: form.approved,
+          }
+        : {}),
     };
 
     try {
