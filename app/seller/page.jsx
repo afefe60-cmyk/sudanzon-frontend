@@ -57,7 +57,7 @@ export default function SellerPage() {
                     <div className="szStatBody">
                       <span className="szStatLabel">إجمالي الأرباح المستحقة</span>
                       <strong className="szStatValue">
-                        {Number(data.metrics.earnings || 185000).toLocaleString()} ج.س
+                        {Number(data?.metrics?.earnings ?? 0).toLocaleString()} ج.س
                       </strong>
                       <span className="szStatHint">تسوية تلقائية عبر تطبيق بنكك</span>
                     </div>
@@ -68,7 +68,7 @@ export default function SellerPage() {
                     <div className="szStatBody">
                       <span className="szStatLabel">المنتجات النشطة بالمتجر</span>
                       <strong className="szStatValue">
-                        {Number(data.metrics.productsCount || 12).toLocaleString()} منتج
+                        {Number(data?.metrics?.productsCount ?? data?.products?.length ?? 0).toLocaleString()} منتج
                       </strong>
                       <span className="szStatHint">معروضة في الأقسام الرئيسية</span>
                     </div>
@@ -79,7 +79,7 @@ export default function SellerPage() {
                     <div className="szStatBody">
                       <span className="szStatLabel">إجمالي الطلبات المستلمة</span>
                       <strong className="szStatValue">
-                        {Number(data.metrics.ordersCount || 28).toLocaleString()} طلب
+                        {Number(data?.metrics?.ordersCount ?? 0).toLocaleString()} طلب
                       </strong>
                       <span className="szStatHint">مكتمل وقيد التوصيل</span>
                     </div>
@@ -89,7 +89,7 @@ export default function SellerPage() {
                     <div className="szStatIconWrap">🏬</div>
                     <div className="szStatBody">
                       <span className="szStatLabel">المتجر المعتمد</span>
-                      <strong className="szStatValue">{data.store || "متجر التاجر"}</strong>
+                      <strong className="szStatValue">{data?.store || data?.vendor?.storeName || "متجر التاجر"}</strong>
                       <span className="szStatHint">حساب موثق وشحن معتمد</span>
                     </div>
                   </div>

@@ -59,10 +59,10 @@ export default function SellerProductsClient() {
       const result = await apiJson("/api/seller/products", {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
-      setProducts(result.items && result.items.length ? result.items : fallbackProducts.slice(0, 8));
+      setProducts(Array.isArray(result?.items) ? result.items : []);
       setMessage("");
     } catch {
-      setProducts(fallbackProducts.slice(0, 8));
+      setProducts([]);
     } finally {
       setLoading(false);
     }
