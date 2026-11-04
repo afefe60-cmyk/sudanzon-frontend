@@ -78,7 +78,7 @@ export default function AdminPage() {
                       <div className="szKpiBody">
                         <span className="szKpiLabel">العملاء المسجلون</span>
                         <strong className="szKpiValue">
-                          {Number(stats.customersCount || 890).toLocaleString()} مستخدم
+                          {Number(stats.customersCount ?? 0).toLocaleString()} مستخدم
                         </strong>
                         <small className="szKpiSub">حسابات نشطة بالمنصة</small>
                       </div>
@@ -89,7 +89,7 @@ export default function AdminPage() {
                       <div className="szKpiBody">
                         <span className="szKpiLabel">المتاجر والبائعين</span>
                         <strong className="szKpiValue">
-                          {Number(stats.vendorsCount || 24).toLocaleString()} تاجر
+                          {Number(stats.vendorsCount ?? 0).toLocaleString()} تاجر
                         </strong>
                         <small className="szKpiSub">متاجر معتمدة بالمنصة</small>
                       </div>
@@ -100,7 +100,7 @@ export default function AdminPage() {
                       <div className="szKpiBody">
                         <span className="szKpiLabel">مناديب التوصيل</span>
                         <strong className="szKpiValue">
-                          {Number(stats.courierCount || 18).toLocaleString()} مندوب
+                          {Number(stats.courierCount ?? 0).toLocaleString()} مندوب
                         </strong>
                         <small className="szKpiSub">تغطية الخرطوم والولايات</small>
                       </div>
@@ -111,7 +111,7 @@ export default function AdminPage() {
                       <div className="szKpiBody">
                         <span className="szKpiLabel">المشرفين والمدراء</span>
                         <strong className="szKpiValue">
-                          {Number(stats.adminCount || 3).toLocaleString()} مسؤول
+                          {Number(stats.adminCount ?? 0).toLocaleString()} مسؤول
                         </strong>
                         <small className="szKpiSub">صلاحيات إدارة كاملة</small>
                       </div>
