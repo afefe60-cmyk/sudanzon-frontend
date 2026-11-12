@@ -15,17 +15,31 @@ export const fetchCache = "force-no-store";
 
 async function loadProduct(id) {
   if (!id) return null;
+
+  let decodedId = "";
   try {
-    const encodedId = encodeURIComponent(String(id).trim());
+    decodedId = decodeURIComponent(String(id).trim());
+  } catch {
+    decodedId = String(id).trim();
+  }
+
+  try {
+    const encodedId = encodeURIComponent(decodedId);
     const result = await apiJson(`/api/products/${encodedId}`, { cache: "no-store" });
     if (result?.item) {
       return result.item;
     }
-  } catch (e) {
-    // API request failed or returned 404
-  }
+  } catch (e) {}
 
-  const decodedId = decodeURIComponent(String(id));
+  try {
+    if (decodedId !== id) {
+      const result = await apiJson(`/api/products/${id}`, { cache: "no-store" });
+      if (result?.item) {
+        return result.item;
+      }
+    }
+  } catch (e) {}
+
   return (
     fallbackProducts.find(
       (item) =>
@@ -92,9 +106,17 @@ export async function generateMetadata({ params }) {
     : `${descLead} ${descShipping}`.slice(0, 160);
 
   let imgUrl = getProductImage(product);
-  if (imgUrl && imgUrl.startsWith("/")) {
-    imgUrl = `https://sudanzon.com${imgUrl}`;
+  if (imgUrl) {
+    if (imgUrl.startsWith("/")) {
+      imgUrl = `https://sudanzon.com${imgUrl}`;
+    }
+  } else {
+    imgUrl = "https://sudanzon.com/og-banner.jpg";
   }
+
+  const isPng = imgUrl.toLowerCase().endsWith(".png");
+  const isWebp = imgUrl.toLowerCase().endsWith(".webp");
+  const mimeType = isPng ? "image/png" : isWebp ? "image/webp" : "image/jpeg";
 
   const canonicalUrl = `https://sudanzon.com/products/${params?.id}`;
 
@@ -112,8 +134,10 @@ export async function generateMetadata({ params }) {
       images: [
         {
           url: imgUrl,
+          secureUrl: imgUrl,
           width: 800,
           height: 800,
+          type: mimeType,
           alt: `${productName} ${locationSuffix}`,
         },
       ],

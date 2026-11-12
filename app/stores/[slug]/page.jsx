@@ -39,9 +39,8 @@ async function getStoreData(slug) {
 function resolveStoreShareImages(store) {
   if (!store) {
     return {
-      optimized: "https://sudanzon.com/logo.png",
-      direct: "https://sudanzon.com/logo.png",
-      mimeType: "image/png",
+      direct: "https://sudanzon.com/og-banner.jpg",
+      mimeType: "image/jpeg",
     };
   }
 
@@ -54,9 +53,8 @@ function resolveStoreShareImages(store) {
 
   if (!candidate) {
     return {
-      optimized: "https://sudanzon.com/logo.png",
-      direct: "https://sudanzon.com/logo.png",
-      mimeType: "image/png",
+      direct: "https://sudanzon.com/og-banner.jpg",
+      mimeType: "image/jpeg",
     };
   }
 
@@ -69,14 +67,11 @@ function resolveStoreShareImages(store) {
     direct = `https://api.sudanzon.com${cleanPath}`;
   }
 
-  // Next.js automatic image optimization ensures the image is < 100KB, perfectly compliant with WhatsApp's strict 300KB limit
-  const optimized = `https://sudanzon.com/_next/image?url=${encodeURIComponent(direct)}&w=600&q=80`;
   const isPng = raw.toLowerCase().endsWith(".png");
   const isWebp = raw.toLowerCase().endsWith(".webp");
   const mimeType = isPng ? "image/png" : isWebp ? "image/webp" : "image/jpeg";
 
   return {
-    optimized,
     direct,
     mimeType,
   };
@@ -104,7 +99,7 @@ export async function generateMetadata({ params }) {
     store.description ||
     `تصفح كافة منتجات وعروض متجر ${storeName} الحصرية على منصة سودان زون. تواصل مباشر مع التاجر عبر واتساب وتوصيل سريع لكافة المدن والدفع عند الاستلام وبنكك.`;
 
-  const { optimized, direct, mimeType } = resolveStoreShareImages(store);
+  const { direct, mimeType } = resolveStoreShareImages(store);
   const canonicalUrl = `https://sudanzon.com/stores/${encodeURIComponent(cleanSlug)}`;
 
   return {
@@ -120,20 +115,12 @@ export async function generateMetadata({ params }) {
       siteName: "سودان زون | SudanZon",
       images: [
         {
-          url: optimized,
-          secureUrl: optimized,
-          width: 600,
-          height: 600,
-          type: mimeType,
-          alt: `شعار متجر ${storeName}`,
-        },
-        {
           url: direct,
           secureUrl: direct,
           width: 800,
           height: 800,
           type: mimeType,
-          alt: `متجر ${storeName}`,
+          alt: `شعار متجر ${storeName}`,
         },
       ],
       locale: "ar_SD",
@@ -143,7 +130,7 @@ export async function generateMetadata({ params }) {
       card: "summary_large_image",
       title: `متجر ${storeName} | سودان زون`,
       description: desc,
-      images: [optimized],
+      images: [direct],
     },
   };
 }

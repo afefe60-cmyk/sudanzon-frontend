@@ -55,9 +55,11 @@ export const metadata = {
       "المنصة السودانية الأولى للتسوق الإلكتروني. تسوق آلاف المنتجات والعروض مع التوصيل السريع والدفع عند الاستلام وبنكك.",
     images: [
       {
-        url: "/logo.png",
-        width: 800,
-        height: 800,
+        url: "https://sudanzon.com/og-banner.jpg",
+        secureUrl: "https://sudanzon.com/og-banner.jpg",
+        width: 1024,
+        height: 500,
+        type: "image/jpeg",
         alt: "سودان زون - SudanZon",
       },
     ],
@@ -66,7 +68,7 @@ export const metadata = {
     card: "summary_large_image",
     title: "سودان زون | SudanZon",
     description: "المنصة السودانية الأولى للتسوق والتجارة الإلكترونية متعددة البائعين.",
-    images: ["/logo.png"],
+    images: ["https://sudanzon.com/og-banner.jpg"],
   },
   robots: {
     index: true,
