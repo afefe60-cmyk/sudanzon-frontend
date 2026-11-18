@@ -7,6 +7,7 @@ import { readCart, removeCartItem, setCartQuantity, writeCart, getCartItemId } f
 import { getProductImage } from "../lib/media";
 import { products as fallbackProducts } from "../lib/mock-data";
 import CheckoutForm from "./CheckoutForm";
+import { ENABLE_CART_ORDERING, DEFAULT_WHATSAPP_NUMBER } from "../lib/whatsapp";
 
 export default function CartPageClient() {
   const [cart, setCart] = useState([]);
@@ -112,7 +113,23 @@ export default function CartPageClient() {
         <span className="szCartItemsCount">({totalCount} منتج)</span>
       </div>
 
-      {loading ? (
+      {!ENABLE_CART_ORDERING ? (
+        <div className="szCartEmptyBox" style={{ maxWidth: '640px', margin: '40px auto', textAlign: 'center', padding: '40px 24px' }}>
+          <div className="szCartEmptyIcon" style={{ fontSize: '54px', marginBottom: '16px' }}>💬</div>
+          <h2 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '12px' }}>الطلب متاح حالياً عبر واتساب المتاجر مباشرة</h2>
+          <p style={{ color: '#64748b', fontSize: '16px', lineHeight: '1.7', margin: '0 auto 24px', maxWidth: '520px' }}>
+            لضمان سرعة الاستجابة والتوصيل الفوري والدفع المرن (كاش أو بنكك)، يتم استقبال الطلبات مباشرة عبر محادثة واتساب مع كل متجر. تصفح المنتجات واضغط على «اطلب الآن عبر واتساب» في صفحة المنتج.
+          </p>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link href="/products" className="szHeroBtn szHeroBtn--primary" style={{ padding: '12px 28px', borderRadius: '12px', fontWeight: 'bold' }}>
+              تصفح المنتجات والعروض 🛍️
+            </Link>
+            <a href={`https://wa.me/${DEFAULT_WHATSAPP_NUMBER}`} target="_blank" rel="noopener noreferrer" className="szHeroBtn" style={{ padding: '12px 24px', borderRadius: '12px', background: '#22c55e', color: '#fff', fontWeight: 'bold' }}>
+              تواصل مع الدعم الفني 💬
+            </a>
+          </div>
+        </div>
+      ) : loading ? (
         <div className="szCartLoading">
           <p>جارِ جلب عناصر السلة...</p>
         </div>

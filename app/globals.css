@@ -12516,3 +12516,55 @@ select {
   transform: translateY(-1px);
   box-shadow: 0 6px 16px rgba(37, 211, 102, 0.42);
 }
+
+
+/* ========================================================
+   Direct WhatsApp Ordering Mode Styles
+   ======================================================== */
+.szBuyBtn--whatsapp {
+  background: linear-gradient(135deg, #25d366 0%, #128c7e 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 18px rgba(37, 211, 102, 0.35);
+  text-decoration: none !important;
+  font-size: 1.05rem;
+  padding: 14px 22px;
+  width: 100%;
+}
+
+.szBuyBtn--whatsapp:hover {
+  background: linear-gradient(135deg, #1ebe5d 0%, #0d6d62 100%) !important;
+  color: #ffffff !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(37, 211, 102, 0.45);
+}
+
+.szWhatsAppDirectNotice {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  color: #166534;
+  line-height: 1.5;
+  margin-top: 10px;
+  text-align: center;
+}
+
+.szAddCartBtn--whatsapp {
+  background: linear-gradient(135deg, #25d366 0%, #16a34a 100%) !important;
+  color: #ffffff !important;
+  border-color: #25d366 !important;
+  text-decoration: none !important;
+  box-shadow: 0 2px 8px rgba(37, 211, 102, 0.25);
+}
+
+.szAddCartBtn--whatsapp:hover {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
+  border-color: #16a34a !important;
+  transform: translateY(-1px);
+  color: #ffffff !important;
+}
+
+.szCartAction--whatsapp:hover .szCartPrompt {
+  color: #16a34a;
+}

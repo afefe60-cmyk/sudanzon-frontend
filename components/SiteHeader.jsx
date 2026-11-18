@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiJson } from "../lib/api";
 import { readCart } from "../lib/cart";
+import { ENABLE_CART_ORDERING, DEFAULT_WHATSAPP_NUMBER } from "../lib/whatsapp";
 import { getUserSavedLocation } from "../lib/location";
 
 const navItems = [
@@ -575,21 +576,42 @@ export default function SiteHeader() {
               </div>
             )}
 
-            {/* Cart Button */}
-            <Link className={`szCartAction ${cartBump ? "is-bump" : ""}`} href="/cart" aria-label="سلة التسوق">
-              <div className="szCartIconWrap">
-                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="9" cy="21" r="1" />
-                  <circle cx="20" cy="21" r="1" />
-                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-                </svg>
-                <span className="szCartCount">{cartCount}</span>
-              </div>
-              <div className="szCartText">
-                <span className="szCartLabel">السلة</span>
-                <strong className="szCartPrompt">المشتريات</strong>
-              </div>
-            </Link>
+            {/* Cart / WhatsApp Quick Action */}
+            {!ENABLE_CART_ORDERING ? (
+              <a
+                className="szCartAction szCartAction--whatsapp"
+                href={`https://wa.me/${DEFAULT_WHATSAPP_NUMBER}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="تواصل عبر واتساب سودان زون"
+                title="تواصل مباشر عبر واتساب"
+              >
+                <div className="szCartIconWrap" style={{ background: '#22c55e', color: '#fff' }}>
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                    <path d="M12.031 0C5.405 0 .025 5.38.025 12.006c0 2.115.553 4.18 1.603 5.998L0 24l6.168-1.618a11.97 11.97 0 0 0 5.863 1.523h.005c6.626 0 12.006-5.38 12.006-12.006C24.042 5.38 18.662 0 12.031 0zm0 21.99a9.97 9.97 0 0 1-5.083-1.39l-.365-.216-3.774.99.1-3.676-.237-.378a9.96 9.96 0 0 1-1.534-5.314c0-5.518 4.49-10.008 10.01-10.008 2.673 0 5.187 1.042 7.078 2.933a9.94 9.94 0 0 1 2.934 7.076c0 5.519-4.49 10.007-10.01 10.007z" />
+                  </svg>
+                </div>
+                <div className="szCartText">
+                  <span className="szCartLabel" style={{ color: '#16a34a' }}>تواصل فوري</span>
+                  <strong className="szCartPrompt">واتساب</strong>
+                </div>
+              </a>
+            ) : (
+              <Link className={`szCartAction ${cartBump ? "is-bump" : ""}`} href="/cart" aria-label="سلة التسوق">
+                <div className="szCartIconWrap">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="9" cy="21" r="1" />
+                    <circle cx="20" cy="21" r="1" />
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                  </svg>
+                  <span className="szCartCount">{cartCount}</span>
+                </div>
+                <div className="szCartText">
+                  <span className="szCartLabel">السلة</span>
+                  <strong className="szCartPrompt">المشتريات</strong>
+                </div>
+              </Link>
+            )}
 
             {/* Mobile Hamburger Toggle */}
             <button

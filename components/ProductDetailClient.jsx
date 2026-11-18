@@ -6,6 +6,7 @@ import { useState, useMemo, useEffect } from "react";
 import { addToCartItem } from "../lib/cart";
 import { getProductImages } from "../lib/media";
 import { trackProductView, trackProductClick } from "../lib/product-analytics";
+import { ENABLE_CART_ORDERING, getProductWhatsAppOrderUrl } from "../lib/whatsapp";
 
 export default function ProductDetailClient({ product, specs = [] }) {
   const router = useRouter();
@@ -462,44 +463,78 @@ export default function ProductDetailClient({ product, specs = [] }) {
 
             {/* Action Buttons */}
             <div className="szBuyBoxActions">
-              <button
-                type="button"
-                onClick={handleAddToCart}
-                className={"szBuyBtn szBuyBtn--cart " + (added ? "is-added " : "") + (isOutOfStock ? "is-disabled" : "")}
-                disabled={isOutOfStock}
-              >
-                {isOutOfStock ? (
-                  <span>غير متوفر حالياً</span>
-                ) : added ? (
-                  <>
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <polyline points="20 6 9 17 4 12" />
+              {!ENABLE_CART_ORDERING ? (
+                <>
+                  <a
+                    href={isOutOfStock ? "#" : getProductWhatsAppOrderUrl({
+                      product,
+                      quantity,
+                      selectedOptions,
+                      variant: matchedVariant,
+                      currentPrice,
+                    })}
+                    target={isOutOfStock ? "_self" : "_blank"}
+                    rel="noopener noreferrer"
+                    onClick={(e) => {
+                      if (isOutOfStock) {
+                        e.preventDefault();
+                        return;
+                      }
+                      if (product?.id) trackProductClick(product.id);
+                    }}
+                    className={"szBuyBtn szBuyBtn--whatsapp " + (isOutOfStock ? "is-disabled" : "")}
+                  >
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                      <path d="M12.031 0C5.405 0 .025 5.38.025 12.006c0 2.115.553 4.18 1.603 5.998L0 24l6.168-1.618a11.97 11.97 0 0 0 5.863 1.523h.005c6.626 0 12.006-5.38 12.006-12.006C24.042 5.38 18.662 0 12.031 0zm0 21.99a9.97 9.97 0 0 1-5.083-1.39l-.365-.216-3.774.99.1-3.676-.237-.378a9.96 9.96 0 0 1-1.534-5.314c0-5.518 4.49-10.008 10.01-10.008 2.673 0 5.187 1.042 7.078 2.933a9.94 9.94 0 0 1 2.934 7.076c0 5.519-4.49 10.007-10.01 10.007z" />
                     </svg>
-                    <span>تمت الإضافة للسلة!</span>
-                  </>
-                ) : (
-                  <>
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="9" cy="21" r="1" />
-                      <circle cx="20" cy="21" r="1" />
-                      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-                    </svg>
-                    <span>أضف إلى السلة</span>
-                  </>
-                )}
-              </button>
+                    <span>{isOutOfStock ? "غير متوفر حالياً" : "اطلب الآن عبر واتساب المتجر"}</span>
+                  </a>
+                  <div className="szWhatsAppDirectNotice">
+                    <span>💬 تواصل فوري ومباشر مع المتجر لتأكيد الطلب والدفع (كاش أو بنكك) وترتيب التوصيل.</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleAddToCart}
+                    className={"szBuyBtn szBuyBtn--cart " + (added ? "is-added " : "") + (isOutOfStock ? "is-disabled" : "")}
+                    disabled={isOutOfStock}
+                  >
+                    {isOutOfStock ? (
+                      <span>غير متوفر حالياً</span>
+                    ) : added ? (
+                      <>
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        <span>تمت الإضافة للسلة!</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                          <circle cx="9" cy="21" r="1" />
+                          <circle cx="20" cy="21" r="1" />
+                          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                        </svg>
+                        <span>أضف إلى السلة</span>
+                      </>
+                    )}
+                  </button>
 
-              <button
-                type="button"
-                onClick={handleBuyNow}
-                className={"szBuyBtn szBuyBtn--buyNow " + (isOutOfStock ? "is-disabled" : "")}
-                disabled={isOutOfStock}
-              >
-                <span>شراء الآن (متابعة الدفع)</span>
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M19 12H5M12 19l-7-7 7-7" />
-                </svg>
-              </button>
+                  <button
+                    type="button"
+                    onClick={handleBuyNow}
+                    className={"szBuyBtn szBuyBtn--buyNow " + (isOutOfStock ? "is-disabled" : "")}
+                    disabled={isOutOfStock}
+                  >
+                    <span>شراء الآن (متابعة الدفع)</span>
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M19 12H5M12 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+                </>
+              )}
             </div>
 
             <div className="szBuyBoxGuarantees">
