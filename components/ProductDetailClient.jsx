@@ -589,24 +589,68 @@ export default function ProductDetailClient({ product, specs = [] }) {
           <span className="szStickyStockStatus">{isOutOfStock ? "غير متوفر" : "متوفر للطلب"}</span>
         </div>
         <div className="szStickyMobileButtons">
-          <button
-            type="button"
-            onClick={handleAddToCart}
-            className="szStickyCartBtn"
-            disabled={isOutOfStock}
-            aria-label="أضف للسلة"
-          >
-            {isOutOfStock ? "غير متوفر" : added ? "✓ تمت الإضافة" : "أضف للسلة"}
-          </button>
-          <button
-            type="button"
-            onClick={handleBuyNow}
-            className="szStickyBuyBtn"
-            disabled={isOutOfStock}
-            aria-label="شراء الآن"
-          >
-            شراء الآن
-          </button>
+          {!ENABLE_CART_ORDERING ? (
+            <a
+              href={isOutOfStock ? "#" : getProductWhatsAppOrderUrl({
+                product,
+                quantity,
+                selectedOptions,
+                variant: matchedVariant,
+                currentPrice,
+              })}
+              target={isOutOfStock ? "_self" : "_blank"}
+              rel="noopener noreferrer"
+              onClick={(e) => {
+                if (isOutOfStock) {
+                  e.preventDefault();
+                  return;
+                }
+                if (product?.id) trackProductClick(product.id);
+              }}
+              className={"szStickyWhatsAppBtn " + (isOutOfStock ? "is-disabled" : "")}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                background: 'linear-gradient(135deg, #25d366 0%, #128c7e 100%)',
+                color: '#ffffff',
+                fontWeight: '800',
+                fontSize: '0.98rem',
+                borderRadius: '12px',
+                padding: '12px 18px',
+                textDecoration: 'none',
+                width: '100%',
+                boxShadow: '0 4px 14px rgba(37, 211, 102, 0.4)'
+              }}
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                <path d="M12.031 0C5.405 0 .025 5.38.025 12.006c0 2.115.553 4.18 1.603 5.998L0 24l6.168-1.618a11.97 11.97 0 0 0 5.863 1.523h.005c6.626 0 12.006-5.38 12.006-12.006C24.042 5.38 18.662 0 12.031 0zm0 21.99a9.97 9.97 0 0 1-5.083-1.39l-.365-.216-3.774.99.1-3.676-.237-.378a9.96 9.96 0 0 1-1.534-5.314c0-5.518 4.49-10.008 10.01-10.008 2.673 0 5.187 1.042 7.078 2.933a9.94 9.94 0 0 1 2.934 7.076c0 5.519-4.49 10.007-10.01 10.007z" />
+              </svg>
+              <span>{isOutOfStock ? "غير متوفر حالياً" : "اطلب الآن عبر واتساب"}</span>
+            </a>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={handleAddToCart}
+                className="szStickyCartBtn"
+                disabled={isOutOfStock}
+                aria-label="أضف للسلة"
+              >
+                {isOutOfStock ? "غير متوفر" : added ? "✓ تمت الإضافة" : "أضف للسلة"}
+              </button>
+              <button
+                type="button"
+                onClick={handleBuyNow}
+                className="szStickyBuyBtn"
+                disabled={isOutOfStock}
+                aria-label="شراء الآن"
+              >
+                شراء الآن
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -294,14 +294,41 @@ export default function StoreProfileClient({ initialStore, initialSlug }) {
                         <small className="szStoreDeliveryTag">🚚 توصيل سريع</small>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => addToCart(product)}
-                        className="szStoreAddToCartBtn"
-                        title="أضف إلى السلة"
-                      >
-                        <span>🛒 أضف للسلة</span>
-                      </button>
+                      {!ENABLE_CART_ORDERING ? (
+                        <a
+                          href={getProductWhatsAppOrderUrl({
+                            product: {
+                              ...product,
+                              vendor: {
+                                storeName: store?.storeName,
+                                phone: store?.user?.phone || store?.phone,
+                              }
+                            },
+                            quantity: 1,
+                          })}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="szStoreAddToCartBtn"
+                          style={{
+                            background: 'linear-gradient(135deg, #25d366 0%, #16a34a 100%)',
+                            borderColor: '#25d366',
+                            color: '#ffffff',
+                            textDecoration: 'none',
+                          }}
+                          title="اطلب عبر واتساب"
+                        >
+                          <span>💬 طلب واتساب</span>
+                        </a>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => addToCart(product)}
+                          className="szStoreAddToCartBtn"
+                          title="أضف إلى السلة"
+                        >
+                          <span>🛒 أضف للسلة</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
